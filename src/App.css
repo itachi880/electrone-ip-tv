@@ -1,0 +1,34 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  transition: all 0.12s ease-in-out;
+  font-family: Arial, Helvetica, sans-serif;
+}
+.app-container {
+  width: 100vw;
+  display: flex;
+  height: 100vh;
+  justify-content: space-between;
+  padding: 10px 20px;
+  background-color: black;
+}
+/* Custom Scrollbar for Webkit Browsers (Chrome, Edge, Safari) */
+::-webkit-scrollbar {
+  width: 8px; /* Scrollbar width */
+}
+
+::-webkit-scrollbar-track {
+  background: #222; /* Track background */
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #555; /* Scrollbar color */
+  border-radius: 10px;
+  transition: background 0.3s;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #888; /* Hover effect */
+}

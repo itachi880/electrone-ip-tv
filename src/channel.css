@@ -1,0 +1,44 @@
+.channel {
+  padding: 10px;
+  list-style: none;
+  margin-bottom: 5px;
+  border-radius: 5px;
+  color: white;
+  cursor: pointer;
+  border: 1px solid white;
+}
+.channel-list {
+  height: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 0 10px 0 0;
+  width: 40vw;
+  min-width: 500px;
+}
+.channel.speciale-input {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: black;
+  background-color: white;
+  padding: 0 10px 0 10px;
+  position: sticky;
+  top: 0;
+}
+.channel.search-bar input {
+  width: 97%;
+  height: 100%;
+  outline: none;
+  border: none;
+  padding-block: 10px;
+}
+.channel:not(.search-bar):hover {
+  background-color: white;
+  color: black;
+}
+.channel.search-bar {
+  top: 0;
+}
+.channel.file-input {
+  top: 40px;
+}
