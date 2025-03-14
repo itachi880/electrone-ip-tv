@@ -13,6 +13,9 @@ jobs:
   build:
     runs-on: ubuntu-latest
 
+    permissions:
+      contents: write # Ensure the GITHUB_TOKEN has write permissions
+
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
@@ -41,15 +44,17 @@ jobs:
       - name: Commit and Push .deb to main
         run: |
           # Verify the file exists in the ubuntu_build folder
-          ls -alh ubuntu_build/
+          ls -alh .
 
           # Configure Git user (required for commit)
           git config --global user.name "GitHub Actions"
           git config --global user.email "actions@github.com"
 
-          # Add the .deb file and commit
-          git add .
-          git commit -m "Add built Electron app .deb binary"
-          git push origin main
+          # Check if the .deb file exists, and if so, add and commit
+
+            git add .
+            git commit -m "Add built Electron app .deb binary"
+            git push origin main
+
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
