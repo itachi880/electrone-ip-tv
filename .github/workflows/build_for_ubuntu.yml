@@ -36,3 +36,24 @@ jobs:
         with:
           name: electrone-iptv-deb
           path: ubuntu_build/*.deb
+
+      # Commit and push the binary to the repository
+      - name: Commit and Push .deb to main
+        run: |
+          # Create the directory where you want to store the .deb file
+          mkdir -p dist
+
+          # Move the .deb file to the dist folder
+          mv ubuntu_build/*.deb dist/
+
+          # Configure Git user (required for commit)
+          git config --global user.name "GitHub Actions"
+          git config --global user.email "actions@github.com"
+
+          # Add the binary to git, commit and push to the main branch
+          git add dist/*.deb
+          git commit -m "Add built Electron app .deb binary"
+          git push origin main
+        env:
+          # Use the GITHUB_TOKEN for authentication
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
