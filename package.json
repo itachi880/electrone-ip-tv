@@ -83,7 +83,6 @@
         {
           "name": "@electron-forge/maker-deb",
           "config": {
-            "output": "./ubuntu_build",
             "arch": "x64"
           }
         }
