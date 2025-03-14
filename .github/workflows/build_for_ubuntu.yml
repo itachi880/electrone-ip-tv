@@ -8,31 +8,44 @@ on:
     branches:
       - main
   workflow_dispatch:
-
 jobs:
   build:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout Repository
+      # Checkout the repository
+      - name: Checkout repository
         uses: actions/checkout@v4
 
+      # Setup Node.js
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 18
+          node-version: '18'
 
-      - name: Install Dependencies
+      # Install dependencies
+      - name: Install dependencies
         run: npm install
 
-      - name: Build Frontend
+      # Build frontend (React)
+      - name: Build frontend
         run: npm run build_front
 
-      - name: Build Electron App
+      # Ensure the ubuntu_build directory exists (it will be created if it doesn't exist)
+      - name: Ensure ubuntu_build directory exists
+        run: mkdir -p ubuntu_build
+
+      # Build the Electron app and create the .deb package
+      - name: Build Electron app
         run: npm run build_deb
 
+      # List the files in ubuntu_build to verify the .deb file exists
+      - name: List files in ubuntu_build directory
+        run: ls -al ubuntu_build/
+
+      # Upload the .deb file as an artifact
       - name: Upload .deb Artifact
         uses: actions/upload-artifact@v4
         with:
           name: electrone-iptv-deb
-          path: ubuntu_build/*.deb
+          path: ubuntu_build/*.deb  # Path to your .deb files
