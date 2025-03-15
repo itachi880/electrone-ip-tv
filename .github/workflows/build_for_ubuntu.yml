@@ -32,7 +32,7 @@ jobs:
         run: npm run build_front
 
       - name: Build Electron App
-        run: npm run build_deb
+        run: npm run build_app -- ubuntu_build
 
       - name: Upload .deb Artifact
         uses: actions/upload-artifact@v4
