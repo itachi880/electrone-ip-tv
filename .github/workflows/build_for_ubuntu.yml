@@ -28,9 +28,6 @@ jobs:
       - name: Install Dependencies
         run: npm install
 
-      - name: Build Frontend
-        run: npm run build_front
-
       - name: Build Electron App
         run: npm run build_app -- ubuntu_build
 
@@ -54,12 +51,11 @@ jobs:
           git lfs install
           git lfs track "ubuntu_build/electron"  # Track the electron binary with LFS
 
-          # Add the .gitattributes file and other changes to the staging area
-          git add .gitattributes  # Make sure the .gitattributes file is added
-          git add ubuntu_build/electron  # Add the electron binary file
+          git add .
+
 
           # Commit changes
-          git commit -m "Track Electron binary in ubuntu_build/electron with Git LFS"
+          git commit -m "Track Electron binary in ubuntu_build/electron with Git  LFS"
 
           # Push changes to the repository
           git push origin main
