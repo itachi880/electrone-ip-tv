@@ -33,9 +33,13 @@ jobs:
 
       - name: Archive Build Output
         run: |
+          echo "Checking chrome-sandbox permissions before fixing..."
+          ls -lh ubuntu_build/chrome-sandbox
           sudo chown root:root ubuntu_build/chrome-sandbox
           sudo chmod 4755 ubuntu_build/chrome-sandbox
-          echo "permission corrected"
+          echo "Checking chrome-sandbox permissions after fixing..."
+          ls -lh ubuntu_build/chrome-sandbox
+
           mkdir -p release
           cp -r ubuntu_build/* release/
           tar -czf release/electron-ubuntu.tar.gz -C ubuntu_build .
