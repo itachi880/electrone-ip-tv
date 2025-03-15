@@ -31,10 +31,10 @@ coverage
 
 # Compiled binary addons (https://nodejs.org/api/addons.html)
 
-
 # Dependency directories
 node_modules/
-!ubuntu_build/resources/app/node_modules
+!ubuntu_build/resources/app/node_modules/
+!windows_build/node_modules/  # Add other specific directories you need
 jspm_packages/
 
 # TypeScript v1 declaration files
