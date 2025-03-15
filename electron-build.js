@@ -56,6 +56,7 @@ copyDir(__dirname, path.join(output, "resources", "app"), [
   ".gitlab",
   ".git",
   "out",
+  "ubuntu_build",
   process.argv[2] || "electron_build",
 ]);
 
@@ -92,5 +93,24 @@ fs.rmSync(path.join(output, "resources", "app", "node_modules", "electron"), {
   recursive: true,
   force: true,
 });
-//ubuntu_build/resources/app/node_modules/electron/dist/electron
+const dependencyToDelete = Object.keys(
+  JSON.parse(
+    fs.readFileSync(path.join(__dirname, "package.json"), { encoding: "utf-8" })
+  ).devDependencies
+);
+dependencyToDelete.forEach((dependency) => {
+  try {
+    console.log(
+      "remouving : ",
+      path.join(resourcesPath, "app", "node_modules", dependency)
+    );
+    fs.rmdirSync(path.join(resourcesPath, "app", "node_modules", dependency), {
+      recursive: true,
+      force: true,
+    });
+    console.log("**package :", dependency, " removed!");
+  } catch (e) {
+    console.log(e);
+  }
+});
 console.log("✅ Packaging complete!");

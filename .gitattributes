@@ -1,2 +1,0 @@
-# Track the electron binary file with LFS
-ubuntu_build/electron filter=lfs diff=lfs merge=lfs -text

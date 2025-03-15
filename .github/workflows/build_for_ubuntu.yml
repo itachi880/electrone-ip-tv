@@ -1,4 +1,4 @@
-name: Build Electron App for Ubuntu
+name: Build & Release Electron App for Ubuntu
 
 on:
   push:
@@ -14,7 +14,7 @@ jobs:
     runs-on: ubuntu-latest
 
     permissions:
-      contents: write # Ensure the GITHUB_TOKEN has write permissions
+      contents: write # Allows pushing releases
 
     steps:
       - name: Checkout Repository
@@ -31,33 +31,25 @@ jobs:
       - name: Build Electron App
         run: npm run build_app -- ubuntu_build
 
-      - name: Upload .deb Artifact
+      - name: Archive Build Output
+        run: |
+          mkdir -p release
+          cp -r ubuntu_build/* release/
+          tar -czf release/electron-ubuntu.tar.gz -C ubuntu_build .
+
+      - name: Upload Artifact to GitHub Actions
         uses: actions/upload-artifact@v4
         with:
           name: electrone-iptv-deb
-          path: ubuntu_build/*.deb
+          path: release/electron-ubuntu.tar.gz
 
-      # Commit and Push .deb file directly to the repository
-      - name: Commit and Push .deb to main
-        run: |
-          # Verify the file exists in the ubuntu_build folder
-          ls -alh ubuntu_build/  # Check contents in ubuntu_build for troubleshooting
-
-          # Configure Git user (required for commit)
-          git config --global user.name "GitHub Actions"
-          git config --global user.email "actions@github.com"
-
-          # Install Git LFS and track the electron binary
-          git lfs install
-          git lfs track "ubuntu_build/electron"  # Track the electron binary with LFS
-
-          git add .
-
-
-          # Commit changes
-          git commit -m "Track Electron binary in ubuntu_build/electron with Git  LFS"
-
-          # Push changes to the repository
-          git push origin main
-    env:
-      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Create GitHub Release & Upload `.deb`
+        if: github.event_name == 'push' # Only create a release on main branch push
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v1.0.${{ github.run_number }}
+          name: "Electron IPTV Ubuntu Build v1.0.${{ github.run_number }}"
+          body: "Automatically built release for Ubuntu."
+          files: release/electron-ubuntu.tar.gz
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
