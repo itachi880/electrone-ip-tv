@@ -41,12 +41,12 @@ sudo cp -r ./* "$INSTALL_DIR/" || { echo "Failed to copy files. Exiting."; exit 
 echo "Creating symlink on Desktop..."
 
 # Create a symlink for easy access to the app from the desktop
-ln -s "$INSTALL_DIR/myapp" "$DESKTOP_DIR/myapp"
+ln -s "$INSTALL_DIR/electron" "$DESKTOP_DIR/electron"
 
 # Step 4: Optionally, create a symlink for executables in /usr/local/bin (for terminal use)
 echo "Creating symlink in /usr/local/bin (optional)..."
-if [ ! -L "$BIN_DIR/myapp" ]; then
-    sudo ln -s "$INSTALL_DIR/electron" "$BIN_DIR/myapp"
+if [ ! -L "$BIN_DIR/electron" ]; then
+    sudo ln -s "$INSTALL_DIR/electron" "$BIN_DIR/electron"
 else
     echo "Symlink already exists in $BIN_DIR"
 fi
