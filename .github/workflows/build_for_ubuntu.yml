@@ -44,23 +44,24 @@ jobs:
       - name: Commit and Push .deb to main
         run: |
           # Verify the file exists in the ubuntu_build folder
+          ls -alh ubuntu_build/  # Check contents in ubuntu_build for troubleshooting
+
           # Configure Git user (required for commit)
           git config --global user.name "GitHub Actions"
           git config --global user.email "actions@github.com"
 
-          # Install Git LFS and track the entire directory
+          # Install Git LFS and track the entire directory (with a more specific pattern)
           git lfs install
-          git lfs track "ubuntu_build/*"  # This tracks all files inside the "electron" directory and subdirectories
+          git lfs track "ubuntu_build/electron/**/*"  # Track all files under the 'electron' directory
 
-          # Add all files, including .gitattributes, to the staging area
-          git add .gitattributes
-          git add .
+          # Add .gitattributes and other changes to the staging area
+          git add .gattributes
+          git add ubuntu_build/*  # Add the files under ubuntu_build
 
           # Commit changes
           git commit -m "Track Electron files in ubuntu_build/electron directory with Git LFS"
 
           # Push changes to the repository
           git push origin main
-
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
