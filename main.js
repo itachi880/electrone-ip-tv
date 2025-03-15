@@ -21,8 +21,12 @@ const createWindow = async () => {
     },
   });
 
-  // Load the index.html of the app. production!
-  // mainWindow.loadFile(path.join(__dirname, "build", "index.html"));
+  //if the app was alredy build use the build as production else use local as developement
+  if (fs.existsSync(path.join(__dirname, "index.html"))) {
+    mainWindow.loadFile(path.join(__dirname, "index.html"));
+    return;
+  }
+  console.log(path.join(__dirname, "index.html"));
   // load react app !dev
   mainWindow.loadURL("http://localhost:3000");
   // Open the DevTools.

@@ -4,6 +4,7 @@
   "version": "1.0.0",
   "description": "My Electron application description",
   "main": "main.js",
+  "homepage": "./",
   "scripts": {
     "start": "concurrently \"npm run start:react\" \"npm run start:electron\"",
     "start:react": "react-scripts start",
@@ -11,9 +12,7 @@
     "build_front": "react-scripts build",
     "package": "electron-forge package",
     "make": "electron-forge make",
-    "publish": "electron-forge publish",
-    "build_windows": "npm run make --config maker=@electron-forge/maker-squirrel",
-    "build_deb": "npm run make --config maker=@electron-forge/maker-deb"
+    "build_app": "node ./electron-build.js"
   },
   "keywords": [],
   "author": "itachi880 <142436626+itachi880@users.noreply.github.com>",
@@ -23,24 +22,15 @@
     "@babel/preset-react": "^7.26.3",
     "@electron-forge/cli": "^7.7.0",
     "@electron-forge/maker-deb": "^7.7.0",
-    "@electron-forge/maker-rpm": "^7.7.0",
-    "@electron-forge/maker-squirrel": "^7.7.0",
     "@electron-forge/maker-zip": "^7.7.0",
-    "@electron-forge/plugin-auto-unpack-natives": "^7.7.0",
-    "@electron-forge/plugin-fuses": "^7.7.0",
-    "@electron-forge/plugin-webpack": "^7.7.0",
-    "@electron/fuses": "^1.8.0",
-    "@vercel/webpack-asset-relocator-loader": "^1.7.3",
-    "babel-loader": "^10.0.0",
     "concurrently": "^9.1.2",
-    "css-loader": "^6.11.0",
     "electron": "35.0.1",
     "electron-rebuild": "^3.2.9",
-    "node-loader": "^2.1.0",
-    "path-browserify": "^1.0.1",
     "style-loader": "^3.3.4"
   },
   "dependencies": {
+    "@electron-forge/maker-squirrel": "^7.7.0",
+    "asar": "^3.2.0",
     "electron-squirrel-startup": "^1.0.1",
     "hls.js": "^1.5.20",
     "react": "^19.0.0",
@@ -78,12 +68,6 @@
           "name": "@electron-forge/maker-squirrel",
           "config": {
             "name": "electrone-iptv"
-          }
-        },
-        {
-          "name": "@electron-forge/maker-deb",
-          "config": {
-            "arch": "x64"
           }
         }
       ]
