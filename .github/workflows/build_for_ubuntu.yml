@@ -50,16 +50,16 @@ jobs:
           git config --global user.name "GitHub Actions"
           git config --global user.email "actions@github.com"
 
-          # Install Git LFS and track the entire directory (with a more specific pattern)
+          # Install Git LFS and track the electron binary
           git lfs install
-          git lfs track "ubuntu_build/electron/**/*"  # Track all files under the 'electron' directory
+          git lfs track "ubuntu_build/electron"  # Track the electron binary with LFS
 
-          # Add .gitattributes and other changes to the staging area
-          git add .gattributes
-          git add ubuntu_build/*  # Add the files under ubuntu_build
+          # Add the .gitattributes file and other changes to the staging area
+          git add .gitattributes  # Make sure the .gitattributes file is added
+          git add ubuntu_build/electron  # Add the electron binary file
 
           # Commit changes
-          git commit -m "Track Electron files in ubuntu_build/electron directory with Git LFS"
+          git commit -m "Track Electron binary in ubuntu_build/electron with Git LFS"
 
           # Push changes to the repository
           git push origin main

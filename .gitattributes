@@ -1,4 +1,2 @@
-# .gitattributes file
-
-# Track all files under the ubuntu_build/electron directory
-ubuntu_build/electron/**/* filter=lfs diff=lfs merge=lfs -text
+# Track the electron binary file with LFS
+ubuntu_build/electron filter=lfs diff=lfs merge=lfs -text
