@@ -1,7 +1,7 @@
 const { execSync } = require("child_process");
 const fs = require("fs");
 const path = require("path");
-
+const os = require("os");
 // Base path for Electron files
 const ELECTRON_BASE_PATH = path.join(
   __dirname,
@@ -9,7 +9,51 @@ const ELECTRON_BASE_PATH = path.join(
   "electron",
   "dist"
 );
+const install_linux_bash = `
+#!/bin/bash
 
+# Variables
+INSTALL_DIR="/opt/ip-tv"  # Path where we want to install the app
+DESKTOP_DIR="$HOME/Desktop"  # Desktop path
+BIN_DIR="/usr/local/bin"  # Directory for system-wide executables (optional)
+
+# Step 1: Change ownership and permissions
+echo "Setting file permissions and ownership..."
+
+# Ensure chrome-sandbox exists before changing ownership and permissions
+if [ -f "chrome-sandbox" ]; then
+    sudo chown root:root chrome-sandbox
+    sudo chmod 4755 chrome-sandbox
+else
+    echo "chrome-sandbox not found. Skipping..."
+fi
+
+# Step 2: Install files to the desired directory
+echo "Installing files to $INSTALL_DIR..."
+
+# Create the installation directory if it doesn't exist
+sudo mkdir -p "$INSTALL_DIR"
+
+# Copy files to the install directory (adjust as necessary)
+sudo cp -r ./* "$INSTALL_DIR/" || { echo "Failed to copy files. Exiting."; exit 1; }
+
+# Step 3: Create a symlink on the Desktop
+echo "Creating symlink on Desktop..."
+
+# Create a symlink for easy access to the app from the desktop
+ln -s "$INSTALL_DIR/myapp" "$DESKTOP_DIR/myapp"
+
+# Step 4: Optionally, create a symlink for executables in /usr/local/bin (for terminal use)
+echo "Creating symlink in /usr/local/bin (optional)..."
+if [ ! -L "$BIN_DIR/myapp" ]; then
+    sudo ln -s "$INSTALL_DIR/electron" "$BIN_DIR/myapp"
+else
+    echo "Symlink already exists in $BIN_DIR"
+fi
+
+echo "Installation complete."
+
+`;
 // Ensure `output` is a valid absolute path
 const output = path.resolve(process.argv[2] || "electron_build");
 if (fs.existsSync(output)) {
@@ -113,4 +157,7 @@ dependencyToDelete.forEach((dependency) => {
     console.log(e);
   }
 });
+if (os.platform() == "linux") {
+  fs.writeFileSync(path.join(output, "install.sh"), install_linux_bash);
+}
 console.log("✅ Packaging complete!");

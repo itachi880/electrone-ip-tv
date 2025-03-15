@@ -38,6 +38,7 @@ jobs:
           ls -lh chrome-sandbox
           sudo chown root:root chrome-sandbox
           sudo chmod 4755 chrome-sandbox
+          sudo chmod +x install.sh
           echo "Checking chrome-sandbox permissions after fixing..."
           ls -lh chrome-sandbox
           cd ..
