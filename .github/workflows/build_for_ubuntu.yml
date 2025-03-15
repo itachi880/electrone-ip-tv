@@ -31,13 +31,10 @@ jobs:
       - name: Build Electron App
         run: npm run build_app -- ubuntu_build
 
-      - name: Fix chrome-sandbox Permissions
+      - name: Fix chrome-sandbox Permissions & Archive Build Output
         run: |
           sudo chown root:root ubuntu_build/chrome-sandbox
           sudo chmod 4755 ubuntu_build/chrome-sandbox
-
-      - name: Archive Build Output
-        run: |
           mkdir -p release
           cp -r ubuntu_build/* release/
           tar -czf release/electron-ubuntu.tar.gz -C release .
