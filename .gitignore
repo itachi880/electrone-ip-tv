@@ -34,7 +34,7 @@ coverage
 
 # Dependency directories
 node_modules/
-!ubuntu_build/resources/node_modules
+!ubuntu_build/resources/app/node_modules
 jspm_packages/
 
 # TypeScript v1 declaration files
