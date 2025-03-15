@@ -1,9 +1,7 @@
 const { execSync } = require("child_process");
 const fs = require("fs");
 const path = require("path");
-const os = require("os");
 
-const platform = os.platform();
 // Base path for Electron files
 const ELECTRON_BASE_PATH = path.join(
   __dirname,
@@ -11,17 +9,6 @@ const ELECTRON_BASE_PATH = path.join(
   "electron",
   "dist"
 );
-if (platform === "linux") {
-  console.log("build for Ubuntu (Linux)...");
-  // Additional Linux-specific configuration or installation commands
-  execSync(
-    "sudo apt-get install -y libgdk-pixbuf2.0-dev libgtk-3-dev libnotify-dev libappindicator3-dev libalpm-dev",
-    { stdio: "inherit" }
-  );
-} else if (platform === "win32") {
-  console.log("build for Windows...");
-  // Handle Windows-specific tasks
-}
 
 // Ensure `output` is a valid absolute path
 const output = path.resolve(process.argv[2] || "electron_build");
@@ -101,5 +88,9 @@ if (fs.existsSync(buildPath)) {
 } else {
   console.warn("⚠️ Build directory does not exist, skipping copy step.");
 }
-
+fs.rmSync(path.join(output, "resources", "app", "node_modules", "electron"), {
+  recursive: true,
+  force: true,
+});
+//ubuntu_build/resources/app/node_modules/electron/dist/electron
 console.log("✅ Packaging complete!");
