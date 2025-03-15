@@ -53,7 +53,7 @@ jobs:
           # Check if the .deb file exists, and if so, add and commit
           git lfs install
           git lfs track "ubuntu_build/electron"
-          git add .gitattributes ubuntu_build/electron
+          git add .
           git commit -m "Track large Electron binary with Git LFS"
           git push origin main
 
