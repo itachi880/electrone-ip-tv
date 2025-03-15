@@ -33,13 +33,14 @@ jobs:
 
       - name: Fix chrome-sandbox Permissions
         run: |
+          sudo chown root:root ubuntu_build/chrome-sandbox
           sudo chmod 4755 ubuntu_build/chrome-sandbox
 
       - name: Archive Build Output
         run: |
           mkdir -p release
           cp -r ubuntu_build/* release/
-          tar -czf release/electron-ubuntu.tar.gz -C ubuntu_build .
+          tar -czf release/electron-ubuntu.tar.gz -C release .
 
       - name: Upload Artifact to GitHub Actions
         uses: actions/upload-artifact@v4

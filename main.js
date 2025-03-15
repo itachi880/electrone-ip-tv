@@ -3,10 +3,6 @@ const { app, BrowserWindow, session, ipcMain } = require("electron");
 const sqlite3 = require("sqlite3").verbose();
 const fs = require("fs");
 const path = require("path");
-// Handle creating/removing shortcuts on Windows when installing/uninstalling.
-if (require("electron-squirrel-startup")) {
-  app.quit();
-}
 
 const createWindow = async () => {
   // Create the browser window.
