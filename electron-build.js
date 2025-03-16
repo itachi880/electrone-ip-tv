@@ -18,7 +18,8 @@ INSTALL_DIR="/opt/${short_cut_name.replaceAll(
   " ",
   "_"
 )}"  # Path where we want to install the app
-DESKTOP_DIR="/home/$(logname)/Desktop"  # Desktop path
+USERPC=$(logname)
+DESKTOP_DIR=$(sudo -u "$USERPC" xdg-user-dir DESKTOP)  # Desktop path
 APP_NAME="${short_cut_name}"  # Name of the app
 DESKTOP_FILE_NAME="${short_cut_name.replaceAll(
   " ",
