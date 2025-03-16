@@ -2,16 +2,24 @@
   margin: 0;
   padding: 0;
   box-sizing: border-box;
-  transition: all 0.12s ease-in-out;
+  transition: all 0.2s ease-in-out;
   font-family: Arial, Helvetica, sans-serif;
+}
+body {
+  overflow-x: hidden;
 }
 .app-container {
   width: 100vw;
   display: flex;
   height: 100vh;
-  justify-content: space-between;
+
   padding: 10px 20px;
   background-color: black;
+  overflow: hidden;
+  overflow-x: hidden;
+  flex-wrap: wrap-reverse;
+  align-items: start;
+  justify-content: space-between;
 }
 /* Custom Scrollbar for Webkit Browsers (Chrome, Edge, Safari) */
 ::-webkit-scrollbar {
@@ -24,7 +32,7 @@
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #555; /* Scrollbar color */
+  background: #ffffff; /* Scrollbar color */
   border-radius: 10px;
   transition: background 0.3s;
 }

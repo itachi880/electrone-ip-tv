@@ -27,12 +27,10 @@ function App() {
           });
         }}
       />
-      <div className="video-wrapper">
-        <VideoPlayer
-          m3u8Url={selectedChannel.link}
-          refferer={selectedChannel.refferer}
-        />
-      </div>
+      <VideoPlayer
+        m3u8Url={selectedChannel.link}
+        refferer={selectedChannel.refferer}
+      />
       <LoadingBar />
     </div>
   );

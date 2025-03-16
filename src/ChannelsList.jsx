@@ -17,10 +17,8 @@ function ChannelsList({ onClick = (e) => {}, hidedetails = false }) {
   const [hasMore, setHasMore] = useState(true);
 
   useEffect(() => {
-    loadChannels();
-    window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
+    loadChannels(); // Initial load
+  }, []); // Empty dependency array to run only once when the component mounts
 
   const loadChannels = async () => {
     if (!hasMore) return;
@@ -37,13 +35,6 @@ function ChannelsList({ onClick = (e) => {}, hidedetails = false }) {
     }
 
     setLoading({ loading: false });
-  };
-
-  const handleScroll = () => {
-    const { scrollTop, scrollHeight, clientHeight } = document.documentElement;
-    if (scrollTop + clientHeight >= scrollHeight - 50) {
-      loadChannels();
-    }
   };
 
   const searchChannels = async (query) => {
@@ -64,6 +55,15 @@ function ChannelsList({ onClick = (e) => {}, hidedetails = false }) {
       setLoading({ loading: true });
       const dbResults = await window.api.searchForChannelByName(query);
       setDisplayedChannels(dbResults);
+
+      setData({
+        channels: [
+          ...data.channels,
+          ...dbResults.filter(
+            (channel) => data.channels.findIndex((e) => e.id == channel.id) < 0
+          ),
+        ],
+      });
       setLoading({ loading: false });
     }
   };
@@ -144,11 +144,31 @@ function ChannelsList({ onClick = (e) => {}, hidedetails = false }) {
               key={index}
               name={e.name}
               number={index + 1}
-              onClick={() => onClick(e)}
+              onClick={() => {
+                onClick(e);
+                document.documentElement.scrollTop = 0; // For most browsers
+                document.body.scrollTop = 0; // For Safari (older versions)
+              }}
               state={e.state}
             />
           );
         })}
+        {hasMore && (
+          <button
+            className="load-more-btn"
+            onClick={loadChannels}
+            style={{
+              backgroundColor: "#007BFF",
+              color: "white",
+              padding: "10px 20px",
+              border: "none",
+              cursor: "pointer",
+              width: "100%",
+            }}
+          >
+            Load More
+          </button>
+        )}
 
         {!hasMore && (
           <li className="channel no-more">No more channels to load</li>

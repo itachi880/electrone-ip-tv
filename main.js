@@ -12,14 +12,19 @@ const createWindow = async () => {
     height: 600,
     webPreferences: {
       webSecurity: false, // ❌ Disables CORS restrictions (only for dev!)
-      nodeIntegration: true,
       preload: path.join(__dirname, "preload.js"),
     },
   });
-
+  mainWindow.maximize();
   //if the app was alredy build use the build as production else use local as developement
   if (fs.existsSync(path.join(__dirname, "index.html"))) {
     mainWindow.loadFile(path.join(__dirname, "index.html"));
+    mainWindow.webContents.devToolsWebContents.addListener(
+      "devtools-opened",
+      () => {
+        mainWindow.webContents.closeDevTools();
+      }
+    );
     return;
   }
   console.log(path.join(__dirname, "index.html"));

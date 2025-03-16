@@ -11,9 +11,11 @@
   height: 100%;
   overflow-y: auto;
   overflow-x: hidden;
-  padding: 0 10px 0 0;
+  padding: 10px;
   width: 40vw;
-  min-width: 500px;
+  min-width: 300px;
+  height: calc(100vh - 362px);
+  border: 1px solid white;
 }
 .channel.speciale-input {
   display: flex;

@@ -1,6 +1,8 @@
 import React, { useEffect, useRef, useState } from "react";
 import Hls from "hls.js";
 import "./Player.css";
+import { loadingbarstore } from "./data";
+import { findLastIndex } from "./utilis";
 
 const VideoPlayer = ({ m3u8Url, refferer }) => {
   /**
@@ -13,6 +15,8 @@ const VideoPlayer = ({ m3u8Url, refferer }) => {
   const [IsLive, setIsLive] = useState(false);
   const [showSettings, setShowsettings] = useState(false);
   const [volume, setVolume] = useState(1);
+  const [loadingBar, setLoadingBar] = loadingbarstore.useStore();
+  const [save, setSave] = useState(false);
   /**
    * @type {Record<"current",HTMLDivElement>}
    */
@@ -23,25 +27,56 @@ const VideoPlayer = ({ m3u8Url, refferer }) => {
   useEffect(() => {
     if (!m3u8Url) return;
     if (Hls.isSupported()) {
-      const hls = new Hls({
-        xhrSetup: (xhr, url) => {
-          if (refferer) {
-            xhr.setRequestHeader("from", refferer);
-          }
-        },
-      });
+      const hls = !save
+        ? new Hls({
+            xhrSetup: (xhr, url) => {
+              if (refferer) {
+                xhr.setRequestHeader("from", refferer);
+              }
+            },
+          })
+        : new Hls({
+            xhrSetup: (xhr, url) => {
+              if (refferer) {
+                xhr.setRequestHeader("from", refferer);
+              }
+            },
+            // Set the maximum bitrate (1.8 Mbps)
+            maxMaxBufferLength: 15, // Limit buffer to 15 segments to avoid excessive buffering
+            // Buffer size settings
+            maxBufferLength: 45, // Maximum buffer length in seconds (approx. 30 seconds for 1.8 Mbps)
+            maxBufferSize: 620 * 1024 * 1024, // Maximum buffer size in bytes (620 MB)
+            maxAutoLevel: -1, // Disable automatic level selection
+          });
 
       hlsRef.current = hls; // Store the instance for later use
-
+      hls.on(Hls.Events.ERROR, (event, data) => {
+        console.log(data);
+      });
       // When the manifest is parsed, get available qualities
       hls.on(Hls.Events.MANIFEST_PARSED, (event, data) => {
         setQualities(data.levels); // Save available qualities in state
-        setSelectedQuality(data.levels.length - 1); // Default to highest quality
+        setSelectedQuality(
+          !save
+            ? data.levels.length - 1
+            : findLastIndex(
+                data.levels,
+                (level) => level.bitrate <= 2 * 1024 * 1024,
+                0
+              )
+        );
       });
 
       // Attach the HLS.js player to the video element
       hls.loadSource(m3u8Url);
       hls.attachMedia(videoRef.current);
+      hls.on(Hls.Events.LEVEL_SWITCHED, (event, data) => {
+        setSelectedQuality(data.level);
+      });
+      hls.on(Hls.Events.FRAG_LOADED, (event, data) => {
+        console.log("Fragment loaded and appended (FRAG_LOAD_COMPLETED)");
+        setLoadingBar({ loading: false });
+      });
 
       // Clean up when the component is unmounted
       return () => {
@@ -50,13 +85,25 @@ const VideoPlayer = ({ m3u8Url, refferer }) => {
     } else {
       console.error("HLS.js is not supported in this browser.");
     }
-  }, [m3u8Url]); // Only trigger this effect on m3u8Url change
+  }, [m3u8Url, save]); // Only trigger this effect on m3u8Url change
 
   useEffect(() => {
-    if (hlsRef.current && selectedQuality !== null) {
-      hlsRef.current.startLevel = selectedQuality; // Update HLS player quality
+    if (!hlsRef.current || selectedQuality == null) return;
+
+    if (save) {
+      hlsRef.current.loadLevel = selectedQuality;
+      hlsRef.current.nextLevel = selectedQuality;
+      hlsRef.current.startLevel = selectedQuality;
     }
-  }, [selectedQuality]);
+
+    // Ensure initial quality is set only once
+    if (typeof hlsRef.current.startLevel === "undefined") {
+      hlsRef.current.startLevel = selectedQuality;
+    }
+
+    hlsRef.current.loadLevel = selectedQuality;
+  }, [selectedQuality, save]);
+
   useEffect(() => {
     if (!videoRef.current) return;
     const liveStateHandler = () => {
@@ -183,6 +230,8 @@ const VideoPlayer = ({ m3u8Url, refferer }) => {
                 onQualityChange={handleQualityChange}
                 volume={volume}
                 onVolumeChange={handleVolumeChange}
+                save={save}
+                onSaveClick={() => setSave((prev) => !prev)}
               />
             )}
           </div>
@@ -197,6 +246,8 @@ const Settings = ({
   onQualityChange,
   volume,
   onVolumeChange,
+  save = false,
+  onSaveClick,
 }) => {
   return (
     <div className="settings-menu">
@@ -209,8 +260,8 @@ const Settings = ({
               {quality.height}p{" "}
               {`(${
                 quality.bitrate / 1024 >= 1000
-                  ? (quality.bitrate / 1024 / 1024).toFixed(2) + " Mbit/s"
-                  : (quality.bitrate / 1024).toFixed(2) + " Kbit/s"
+                  ? (quality.bitrate / 1024 / 1024).toFixed(2) + " MB/s"
+                  : (quality.bitrate / 1024).toFixed(2) + " KB/s"
               })`}
             </option>
           ))}
@@ -226,6 +277,13 @@ const Settings = ({
           value={volume}
           onChange={onVolumeChange}
         />
+      </div>
+      <div className="setting-item">
+        <label>enregistre le live: </label>
+        <div
+          className={"e-btn" + (save ? " on" : " off")}
+          onClick={onSaveClick}
+        ></div>
       </div>
     </div>
   );

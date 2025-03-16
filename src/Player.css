@@ -125,3 +125,34 @@ video {
   border-radius: 3px;
   width: 70%;
 }
+.settings-menu .e-btn {
+  width: 50px;
+  height: 20px;
+  background-color: white;
+  border-radius: 20px;
+  position: relative;
+  top: 0;
+}
+
+.settings-menu .e-btn::before {
+  content: "";
+  width: 25px;
+  height: 25px;
+  background-color: #0075ff;
+  position: absolute;
+  top: calc(-50% + 7px);
+  border-radius: 50%;
+  left: 100%;
+  box-shadow: 0 0 8px 1px #000;
+  transition: left 0.1s linear;
+}
+.settings-menu .e-btn.on {
+  background-color: #75b4ff;
+}
+.settings-menu .e-btn.on::before {
+  left: calc(100% - 20px);
+}
+
+.settings-menu .e-btn.off::before {
+  left: 0;
+}
