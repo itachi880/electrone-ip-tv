@@ -7,9 +7,9 @@
   "homepage": "./",
   "scripts": {
     "start": "concurrently \"npm run start:react\" \"npm run start:electron\"",
-    "start:react": "react-scripts start",
+    "start:react": "vite",
     "start:electron": "electron .",
-    "build_front": "react-scripts build",
+    "build_front": "vite build",
     "package": "electron-forge package",
     "make": "electron-forge make",
     "build_app": "node ./electron-build.js"
@@ -18,26 +18,29 @@
   "author": "itachi880 <142436626+itachi880@users.noreply.github.com>",
   "license": "MIT",
   "devDependencies": {
+    "@babel/core": "^7.26.10",
+    "@babel/preset-react": "^7.26.3",
     "@electron-forge/cli": "^7.7.0",
     "@electron-forge/maker-deb": "^7.7.0",
-    "@electron-forge/maker-zip": "^7.7.0",
-    "concurrently": "^9.1.2",
-    "electron-rebuild": "^3.2.9",
-    "style-loader": "^3.3.4",
     "@electron-forge/maker-squirrel": "^7.7.0",
+    "@electron-forge/maker-zip": "^7.7.0",
+    "@vitejs/plugin-react": "^5.1.4",
     "asar": "^3.2.0",
-    "electron-squirrel-startup": "^1.0.1",
+    "concurrently": "^9.1.2",
     "electron": "35.0.1",
+    "electron-rebuild": "^3.2.9",
+    "electron-squirrel-startup": "^1.0.1",
     "hls.js": "^1.5.20",
     "react": "^19.0.0",
     "react-data-stores": "^1.3.9",
     "react-dom": "^19.0.0",
-    "react-scripts": "^5.0.1",
-    "@babel/core": "^7.26.10",
-    "@babel/preset-react": "^7.26.3"
+    "style-loader": "^3.3.4",
+    "vite": "^7.3.1"
   },
   "dependencies": {
-    "sqlite3": "^5.1.7"
+    "@tailwindcss/vite": "^4.2.1",
+    "sqlite3": "^5.1.7",
+    "tailwindcss": "^4.2.1"
   },
   "build": {
     "files": [
