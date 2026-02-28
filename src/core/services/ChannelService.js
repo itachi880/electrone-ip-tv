@@ -8,6 +8,14 @@ class ChannelService {
         return await window.api.getPaginatedChannels(limit, offset);
     }
 
+    static async getPlaylists() {
+        return await window.api.getPlaylists();
+    }
+
+    static async getChannelsByPlaylist(playlist, limit, offset) {
+        return await window.api.getChannelsByPlaylist(playlist, limit, offset);
+    }
+
     static async searchChannels(query) {
         return await window.api.searchForChannelByName(query);
     }
@@ -19,6 +27,14 @@ class ChannelService {
             return channels;
         }
         return [];
+    }
+
+    static async updateChannel(id, updates) {
+        return await window.api.updateChannel(id, updates);
+    }
+
+    static async deleteChannel(id) {
+        return await window.api.deleteChannel(id);
     }
 
     static async getFavorites() {

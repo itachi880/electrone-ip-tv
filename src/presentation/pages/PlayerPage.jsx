@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState, useMemo } from 'react';
 import Hls from 'hls.js';
 import { useChannels } from '../hooks/useChannels';
+import ChannelEditorModal from '../components/ChannelEditorModal';
 
 const PlayerPage = ({ channel, onBack, onPlayChannel }) => {
   const videoRef = useRef(null);
@@ -20,14 +21,16 @@ const PlayerPage = ({ channel, onBack, onPlayChannel }) => {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showSidebar, setShowSidebar] = useState(true);
   const [showControls, setShowControls] = useState(true);
+  const [editingChannel, setEditingChannel] = useState(null);
   const controlsTimeoutRef = useRef(null);
   
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [buffered, setBuffered] = useState(null);
   const [dvrBufferConfig, setDvrBufferConfig] = useState(15);
+  const [isLiveLive, setIsLiveLive] = useState(true);
 
-  const { channels, toggleFavorite, loadMore, hasMore, handleSearch, loading: loadingChannels } = useChannels(25); // Get channels for sidebar
+  const { channels, toggleFavorite, loadMore, hasMore, handleSearch, loading: loadingChannels, editChannel, removeChannel } = useChannels(25); // Get channels for sidebar
   
   useEffect(() => {
     // Load config
@@ -186,10 +189,12 @@ const PlayerPage = ({ channel, onBack, onPlayChannel }) => {
           setCurrentTime(video.currentTime);
           setDuration(video.duration);
           if (video.buffered.length > 0) {
-              setBuffered({
-                  start: video.buffered.start(0),
-                  end: video.buffered.end(video.buffered.length - 1)
-              });
+              const bStart = video.buffered.start(0);
+              const bEnd = video.buffered.end(video.buffered.length - 1);
+              setBuffered({ start: bStart, end: bEnd });
+              
+              // Indicate live if within 5 seconds of the live edge
+              setIsLiveLive(video.currentTime >= bEnd - 5);
           }
       };
 
@@ -302,16 +307,26 @@ const PlayerPage = ({ channel, onBack, onPlayChannel }) => {
                           ) : (
                               <span className="w-1 h-1 bg-green-400 rounded-full"></span>
                           )}
-                          <p className="text-[10px] text-slate-500 truncate">IPTV</p>
+                          <p className={`text-[10px] truncate ${navCh.id === channel.id ? 'text-slate-300' : 'text-slate-500'}`}>
+                              {navCh.playlist || 'IPTV Stream'}
+                          </p>
                       </div>
                   </div>
-                  {navCh.id === channel.id && (
-                       <div className="flex flex-col gap-0.5">
-                          <span className="w-0.5 h-0.5 bg-white/50 rounded-full"></span>
-                          <span className="w-0.5 h-0.5 bg-white/50 rounded-full"></span>
-                          <span className="w-0.5 h-0.5 bg-white/50 rounded-full"></span>
-                      </div>
-                  )}
+                  
+                  {/* Three-dotted Edit button */}
+                  <div className="relative group/menu flex items-center justify-center">
+                      <button 
+                          onClick={(e) => { e.stopPropagation(); setEditingChannel(navCh); }}
+                          className={`p-1 rounded opacity-0 group-hover:opacity-100 transition-opacity hover:bg-white/10 ${navCh.id === channel.id ? 'opacity-100 hover:bg-white/20' : ''}`}
+                          title="Edit Channel"
+                      >
+                          <div className="flex flex-col gap-0.5 pointer-events-none">
+                              <span className="w-1 h-1 bg-slate-400 group-hover/menu:bg-white rounded-full transition-colors"></span>
+                              <span className="w-1 h-1 bg-slate-400 group-hover/menu:bg-white rounded-full transition-colors"></span>
+                              <span className="w-1 h-1 bg-slate-400 group-hover/menu:bg-white rounded-full transition-colors"></span>
+                          </div>
+                      </button>
+                  </div>
               </div>
           ));
   }, [channels, searchSidebar, channel.id, onPlayChannel]);
@@ -370,10 +385,20 @@ const PlayerPage = ({ channel, onBack, onPlayChannel }) => {
                 <div className={`flex flex-col items-end ${controlsVisible ? 'pointer-events-auto' : 'pointer-events-none'}`}>
                     <div className="flex items-center gap-3 mb-1">
                         <h1 className="text-xl font-bold text-white drop-shadow-md tracking-tight">{channel.name}</h1>
-                        <div className="flex items-center gap-1.5 bg-red-500/80 backdrop-blur-md text-white px-2.5 py-0.5 rounded-full shadow-lg shadow-red-900/20 border border-white/10 cursor-pointer">
-                            <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse"></span>
+                        
+                        {/* Live Indicator Sync Button (Top Right) */}
+                        <button 
+                            onClick={jumpToLive}
+                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border transition-all ${
+                                isLiveLive 
+                                ? 'bg-red-500/80 border-red-500/50 shadow-lg shadow-red-900/20 text-white cursor-default' 
+                                : 'bg-black/50 border-white/10 text-slate-400 hover:text-white hover:bg-white/10 cursor-pointer pointer-events-auto'
+                            }`}
+                            title={isLiveLive ? "Playing at Live Edge" : "Jump to Live Edge"}
+                        >
+                            <span className={`w-1.5 h-1.5 rounded-full ${isLiveLive ? 'bg-white animate-pulse' : 'bg-slate-500'}`}></span>
                             <span className="text-[10px] font-bold uppercase tracking-widest">Live</span>
-                        </div>
+                        </button>
                     </div>
                 </div>
             </header>
@@ -410,16 +435,6 @@ const PlayerPage = ({ channel, onBack, onPlayChannel }) => {
                                     className="w-16 h-1 bg-white/20 rounded-full cursor-pointer opacity-50 hover:opacity-100 transition-opacity"
                                 />
                             </div>
-                            
-                            {/* Live Indicator / Jump to Live */}
-                            {buffered && currentTime < buffered.end - 5 && (
-                                <button 
-                                    onClick={jumpToLive}
-                                    className="ml-4 text-xs font-bold text-red-500 border border-red-500/50 bg-red-500/10 px-2 py-0.5 rounded animate-pulse hover:bg-red-500/20 transition-colors"
-                                >
-                                    Jump to Live
-                                </button>
-                            )}
                         </div>
 
                         <div className="flex items-center gap-2">
@@ -567,6 +582,28 @@ const PlayerPage = ({ channel, onBack, onPlayChannel }) => {
                 </button>
             </div>
         </aside>
+
+        {editingChannel && (
+            <ChannelEditorModal 
+                channel={editingChannel} 
+                onClose={() => setEditingChannel(null)} 
+                onSave={async (id, updates) => {
+                    await editChannel(id, updates);
+                    setEditingChannel(null);
+                    if (id === channel.id) {
+                        // Reflect the name dynamically if playing channel was edited
+                        channel.name = updates.name;
+                    }
+                }}
+                onDelete={async (id) => {
+                    await removeChannel(id);
+                    setEditingChannel(null);
+                    if (id === channel.id) {
+                        onBack(); // close player if playing deleted channel
+                    }
+                }}
+            />
+        )}
     </div>
   );
 };

@@ -8,12 +8,21 @@ contextBridge.exposeInMainWorld("api", {
   getPaginatedChannels: (limit, offset) =>
     ipcRenderer.invoke("get-channels-paginated", { limit, offset }),
 
+  // Playlists
+  getPlaylists: () => ipcRenderer.invoke("get-playlists"),
+  getChannelsByPlaylist: (playlist, limit, offset) =>
+    ipcRenderer.invoke("get-channels-by-playlist", { playlist, limit, offset }),
+
   // Search channels
   searchForChannelByName: (query) =>
     ipcRenderer.invoke("search-channels-db", query),
 
   // Insert new channels 
   insertChannels: (channels) => ipcRenderer.invoke("insert-channels", channels),
+
+  // Update and Delete channels
+  updateChannel: (id, updates) => ipcRenderer.invoke("update-channel", { id, updates }),
+  deleteChannel: (id) => ipcRenderer.invoke("delete-channel", id),
 
   // Parse an M3U8 file 
   addChannelsfile: (fileData) =>

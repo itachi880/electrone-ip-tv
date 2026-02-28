@@ -32,13 +32,15 @@ class ChannelRepository {
                     user_agent TEXT,
                     link TEXT NOT NULL UNIQUE,
                     state TEXT,
-                    is_favorite BOOLEAN DEFAULT 0
+                    is_favorite BOOLEAN DEFAULT 0,
+                    playlist TEXT
                 )`, (err) => {
                 if (err) reject(err);
 
                 // Migrations
                 this.db.run(`ALTER TABLE channels ADD COLUMN is_favorite BOOLEAN DEFAULT 0`, (err) => { });
-                this.db.run(`ALTER TABLE channels ADD COLUMN user_agent TEXT`, (err) => {
+                this.db.run(`ALTER TABLE channels ADD COLUMN user_agent TEXT`, (err) => { });
+                this.db.run(`ALTER TABLE channels ADD COLUMN playlist TEXT`, (err) => {
                     resolve();
                 });
             });
@@ -100,8 +102,8 @@ class ChannelRepository {
 
                 try {
                     await this.runQuery(
-                        `INSERT INTO channels (name, referer, user_agent, link, state, is_favorite) VALUES (?, ?, ?, ?, ?, ?)`,
-                        [channel.name, channel.referer || null, channel.user_agent || null, channel.link, channel.state, channel.is_favorite ? 1 : 0]
+                        `INSERT INTO channels (name, referer, user_agent, link, state, is_favorite, playlist) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+                        [channel.name, channel.referer || null, channel.user_agent || null, channel.link, channel.state, channel.is_favorite ? 1 : 0, channel.playlist || null]
                     );
                     inserted++;
                 } catch (error) {
@@ -153,6 +155,26 @@ class ChannelRepository {
         }
     }
 
+    async getPlaylists() {
+        try {
+            const rows = await this.allQuery(`SELECT DISTINCT playlist FROM channels WHERE playlist IS NOT NULL AND playlist != '' ORDER BY playlist ASC`);
+            return rows.map(row => row.playlist);
+        } catch (error) {
+            console.error("Error fetching playlists:", error.message);
+            return [];
+        }
+    }
+
+    async getChannelsByPlaylist(playlist, limit, offset) {
+        try {
+            const rows = await this.allQuery(`SELECT * FROM channels WHERE playlist = ? LIMIT ? OFFSET ?`, [playlist, limit, offset]);
+            return rows.map(row => new Channel(row));
+        } catch (error) {
+            console.error("Error fetching channels by playlist:", error.message);
+            return [];
+        }
+    }
+
     async searchByName(query) {
         try {
             const rows = await this.allQuery(`SELECT * FROM channels WHERE LOWER(name) LIKE ?`, [`%${query.toLowerCase()}%`]);
@@ -189,6 +211,30 @@ class ChannelRepository {
             return true;
         } catch (error) {
             console.error("Error updating channel state:", error.message);
+            return false;
+        }
+    }
+
+    async updateChannel(id, updates) {
+        try {
+            const { name, link, user_agent, referer, playlist } = updates;
+            await this.runQuery(
+                `UPDATE channels SET name = ?, link = ?, user_agent = ?, referer = ?, playlist = ? WHERE id = ?`,
+                [name, link, user_agent, referer, playlist, id]
+            );
+            return true;
+        } catch (error) {
+            console.error("Error updating channel:", error.message);
+            return false;
+        }
+    }
+
+    async deleteChannel(id) {
+        try {
+            await this.runQuery(`DELETE FROM channels WHERE id = ?`, [id]);
+            return true;
+        } catch (error) {
+            console.error("Error deleting channel:", error.message);
             return false;
         }
     }

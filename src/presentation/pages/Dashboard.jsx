@@ -1,18 +1,25 @@
-import React, { useRef } from 'react';
+import React, { useRef, useState } from 'react';
 import { useChannels } from '../hooks/useChannels';
+import ChannelEditorModal from '../components/ChannelEditorModal';
 
 const Dashboard = ({ onPlayChannel }) => {
   const fileInputRef = useRef(null);
+  const [editingChannel, setEditingChannel] = useState(null);
   const { 
     channels, 
     loading, 
     hasMore, 
     searchQuery, 
+    playlists,
+    activePlaylist,
     loadMore, 
-    handleSearch, 
+    handleSearch,
+    handlePlaylistChange, 
     uploadFile,
     uploadProgress,
-    uploadStarted
+    uploadStarted,
+    editChannel,
+    removeChannel
   } = useChannels();
 
   const handleFileUpload = (e) => {
@@ -111,11 +118,32 @@ const Dashboard = ({ onPlayChannel }) => {
           </div>
         )}
 
+        {/* Playlists Filter Bar */}
+        <div className="mb-6 overflow-x-auto no-scrollbar pb-2">
+            <div className="flex items-center gap-2 w-max">
+                <button 
+                    onClick={() => handlePlaylistChange(null)}
+                    className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all ${activePlaylist === null ? 'bg-primary text-white shadow-lg shadow-primary/25' : 'bg-surface-dark text-slate-400 hover:text-white hover:bg-surface-hover border border-slate-800'}`}
+                >
+                    All Channels
+                </button>
+                {playlists.map((pl, idx) => (
+                    <button 
+                        key={idx}
+                        onClick={() => handlePlaylistChange(pl)}
+                        className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all ${activePlaylist === pl ? 'bg-primary text-white shadow-lg shadow-primary/25' : 'bg-surface-dark text-slate-400 hover:text-white hover:bg-surface-hover border border-slate-800'}`}
+                    >
+                        {pl}
+                    </button>
+                ))}
+            </div>
+        </div>
+
         <section className="mb-10">
           <div className="flex items-center justify-between mb-5">
             <h3 className="text-xl font-bold text-white flex items-center gap-2">
               <span className="material-symbols-outlined text-orange-500">local_fire_department</span>
-              All Channels
+              {activePlaylist ? activePlaylist : "All Channels"}
             </h3>
             {loading && channels.length > 0 && <span className="text-xs text-primary animate-pulse">Loading...</span>}
           </div>
@@ -133,13 +161,22 @@ const Dashboard = ({ onPlayChannel }) => {
                         <div className="absolute top-2 right-2 bg-red-500/80 px-2 py-0.5 rounded text-[10px] font-bold text-white">OFFLINE</div>
                     )}
                 </div>
-                <h4 className="text-white font-medium text-sm truncate group-hover:text-primary transition-colors" title={channel.name}>
+                <h4 className="text-white font-medium text-sm truncate group-hover:text-primary transition-colors pr-6" title={channel.name}>
                     {channel.name}
                 </h4>
                 <div className="text-slate-500 text-xs mt-1 flex items-center justify-between">
-                    <span>IPTV Stream</span>
-                    {channel.state === 'OK' && <span className="w-2 h-2 bg-green-500 rounded-full"></span>}
+                    <span className="truncate">{channel.playlist || 'IPTV Stream'}</span>
+                    {channel.state === 'OK' && <span className="w-2 h-2 bg-green-500 rounded-full shrink-0 ml-2"></span>}
                 </div>
+
+                {/* Edit Button overlay */}
+                <button 
+                    onClick={(e) => { e.stopPropagation(); setEditingChannel(channel); }}
+                    className="absolute bottom-3 right-3 p-1.5 bg-black/60 hover:bg-primary text-slate-300 hover:text-white rounded-lg backdrop-blur-md opacity-0 group-hover:opacity-100 transition-all border border-slate-700 hover:border-transparent z-10"
+                    title="Edit Channel"
+                >
+                    <span className="material-symbols-outlined text-[16px]">edit</span>
+                </button>
               </div>
             ))}
           </div>
@@ -157,6 +194,26 @@ const Dashboard = ({ onPlayChannel }) => {
           )}
         </section>
       </div>
+
+      {editingChannel && (
+          <ChannelEditorModal 
+              channel={editingChannel} 
+              onClose={() => setEditingChannel(null)} 
+              onSave={async (id, updates) => {
+                  await editChannel(id, updates);
+                  setEditingChannel(null);
+                  if (activePlaylist && updates.playlist !== activePlaylist && activePlaylist !== null) {
+                      // Optionally, could refresh list here, but it's okay. The hook will update the state.
+                      // Actually, if we filter it out of display:
+                      handlePlaylistChange(activePlaylist);
+                  }
+              }}
+              onDelete={async (id) => {
+                  await removeChannel(id);
+                  setEditingChannel(null);
+              }}
+          />
+      )}
     </main>
   );
 };

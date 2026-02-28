@@ -21,9 +21,25 @@ class ChannelController {
             return await repository.getAllChannels();
         });
 
+        this.ipcMain.handle("get-playlists", async () => {
+            return await repository.getPlaylists();
+        });
+
+        this.ipcMain.handle("get-channels-by-playlist", async (event, { playlist, limit, offset }) => {
+            return await repository.getChannelsByPlaylist(playlist, limit, offset);
+        });
+
         this.ipcMain.handle("insert-channels", async (event, channels) => {
             await repository.insertChannels(channels, event.sender);
             return { success: true };
+        });
+
+        this.ipcMain.handle("update-channel", async (event, { id, updates }) => {
+            return await repository.updateChannel(id, updates);
+        });
+
+        this.ipcMain.handle("delete-channel", async (event, id) => {
+            return await repository.deleteChannel(id);
         });
 
         this.ipcMain.handle("channel-group-parse", (event, fileContent) => {

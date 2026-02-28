@@ -15,10 +15,19 @@ class ParsePlaylist {
             if (line.includes("#EXTINF")) {
                 let name = line.split(",")[1];
                 if (name) name = name.trim();
+
+                // Try to extract group-title
+                let playlist = null;
+                const groupTitleMatch = line.match(/group-title="([^"]+)"/);
+                if (groupTitleMatch) {
+                    playlist = groupTitleMatch[1].trim();
+                }
+
                 currentChannelData = {
                     name: name || "Unknown Channel",
                     referer: null,
-                    link: null
+                    link: null,
+                    playlist: playlist
                 };
                 channels.push(currentChannelData);
             } else if (line.includes("http-referrer") && currentChannelData) {
@@ -37,7 +46,8 @@ class ParsePlaylist {
                 referer: data.referer,
                 user_agent: data.user_agent || null,
                 link: data.link,
-                state: null
+                state: null,
+                playlist: data.playlist
             })
         );
     }

@@ -8,16 +8,29 @@ export function useChannels(initialLimit = 20) {
     const [offset, setOffset] = useState(0);
     const [hasMore, setHasMore] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
+    const [playlists, setPlaylists] = useState([]);
+    const [activePlaylist, setActivePlaylist] = useState(null); // null means "All"
     const [uploadProgress, setUploadProgress] = useState({ current: 0, total: 0, channelName: '' });
     const [uploadStarted, setUploadStarted] = useState(false);
     const loadingRef = useRef(false);
+    const channelsRef = useRef([]);
+
+    useEffect(() => {
+        channelsRef.current = channels;
+    }, [channels]);
 
     const loadMore = useCallback(async () => {
         if (!hasMore || loadingRef.current || searchQuery) return;
 
         loadingRef.current = true;
         setLoading(true);
-        const newChannels = await ChannelService.getPaginatedChannels(initialLimit, offset);
+
+        let newChannels = [];
+        if (activePlaylist) {
+            newChannels = await ChannelService.getChannelsByPlaylist(activePlaylist, initialLimit, offset);
+        } else {
+            newChannels = await ChannelService.getPaginatedChannels(initialLimit, offset);
+        }
 
         if (newChannels.length === 0) {
             setHasMore(false);
@@ -33,7 +46,7 @@ export function useChannels(initialLimit = 20) {
         }
         loadingRef.current = false;
         setLoading(false);
-    }, [hasMore, offset, initialLimit, searchQuery]);
+    }, [hasMore, offset, initialLimit, searchQuery, activePlaylist]);
 
     const handleSearch = useCallback((query) => {
         setSearchQuery(query);
@@ -43,7 +56,7 @@ export function useChannels(initialLimit = 20) {
     useEffect(() => {
         const timer = setTimeout(async () => {
             if (!searchQuery.trim()) {
-                setDisplayedChannels(channels);
+                setDisplayedChannels(channelsRef.current);
                 return;
             }
 
@@ -53,13 +66,14 @@ export function useChannels(initialLimit = 20) {
 
             setChannels(prev => {
                 const newItems = dbResults.filter(r => !prev.some(p => p.id === r.id));
+                if (newItems.length === 0) return prev;
                 return [...prev, ...newItems];
             });
             setLoading(false);
         }, 300);
 
         return () => clearTimeout(timer);
-    }, [searchQuery, channels]);
+    }, [searchQuery]);
 
     const uploadFile = useCallback(async (fileContent) => {
         setLoading(true);
@@ -71,6 +85,20 @@ export function useChannels(initialLimit = 20) {
         // We do NOT clear state here instantly because the background task might still be broadcasting
         // The background task sends `isComplete: true` which will be caught by the global listener
         return newChannels.length;
+    }, []);
+
+    const fetchPlaylists = useCallback(async () => {
+        const dbPlaylists = await ChannelService.getPlaylists();
+        setPlaylists(dbPlaylists);
+    }, []);
+
+    const handlePlaylistChange = useCallback((playlist) => {
+        setActivePlaylist(playlist);
+        setChannels([]);
+        setDisplayedChannels([]);
+        setOffset(0);
+        setHasMore(true);
+        setSearchQuery('');
     }, []);
 
     // Global listener for background upload progress
@@ -131,22 +159,49 @@ export function useChannels(initialLimit = 20) {
         return success;
     }, []);
 
+    const editChannel = useCallback(async (id, updates) => {
+        const success = await ChannelService.updateChannel(id, updates);
+        if (success) {
+            setChannels(prev => prev.map(c => c.id === id ? { ...c, ...updates } : c));
+            setDisplayedChannels(prev => prev.map(c => c.id === id ? { ...c, ...updates } : c));
+        }
+        return success;
+    }, []);
+
+    const removeChannel = useCallback(async (id) => {
+        const success = await ChannelService.deleteChannel(id);
+        if (success) {
+            setChannels(prev => prev.filter(c => c.id !== id));
+            setDisplayedChannels(prev => prev.filter(c => c.id !== id));
+        }
+        return success;
+    }, []);
+
     // Initial load
     useEffect(() => {
-        loadMore();
+        fetchPlaylists();
     }, []);
+
+    useEffect(() => {
+        loadMore();
+    }, [activePlaylist]);
 
     return {
         channels: displayedChannels,
         loading,
         hasMore,
         searchQuery,
+        playlists,
+        activePlaylist,
         loadMore,
         handleSearch,
+        handlePlaylistChange,
         uploadFile,
         uploadProgress,
         uploadStarted,
         fetchFavorites,
-        toggleFavorite
+        toggleFavorite,
+        editChannel,
+        removeChannel
     };
 }
