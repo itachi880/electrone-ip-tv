@@ -25,6 +25,14 @@ class ChannelController {
             return await repository.getPlaylists();
         });
 
+        this.ipcMain.handle("create-playlist", async (event, name) => {
+            return await repository.createPlaylist(name);
+        });
+
+        this.ipcMain.handle("delete-playlist", async (event, name) => {
+            return await repository.deletePlaylist(name);
+        });
+
         this.ipcMain.handle("get-channels-by-playlist", async (event, { playlist, limit, offset }) => {
             return await repository.getChannelsByPlaylist(playlist, limit, offset);
         });

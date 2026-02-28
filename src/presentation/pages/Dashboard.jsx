@@ -1,10 +1,12 @@
 import React, { useRef, useState } from 'react';
 import { useChannels } from '../hooks/useChannels';
 import ChannelEditorModal from '../components/ChannelEditorModal';
+import CreatePlaylistModal from '../components/CreatePlaylistModal';
 
 const Dashboard = ({ onPlayChannel }) => {
   const fileInputRef = useRef(null);
   const [editingChannel, setEditingChannel] = useState(null);
+  const [isCreatingPlaylist, setIsCreatingPlaylist] = useState(false);
   const { 
     channels, 
     loading, 
@@ -14,7 +16,9 @@ const Dashboard = ({ onPlayChannel }) => {
     activePlaylist,
     loadMore, 
     handleSearch,
-    handlePlaylistChange, 
+    handlePlaylistChange,
+    addPlaylist,
+    removePlaylist,
     uploadFile,
     uploadProgress,
     uploadStarted,
@@ -56,13 +60,24 @@ const Dashboard = ({ onPlayChannel }) => {
             />
           </div>
           
-          <button 
-            onClick={() => fileInputRef.current?.click()}
-            className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-xl hover:bg-primary/90 transition-colors shadow-lg shadow-primary/20 text-sm font-medium"
-          >
-            <span className="material-symbols-outlined text-[20px]">upload_file</span>
-            Upload M3U
-          </button>
+          {/* Actions */}
+          <div className="flex gap-3">
+              <button 
+                onClick={() => setIsCreatingPlaylist(true)}
+                className="flex items-center gap-2 px-4 py-2 bg-surface-dark border border-slate-700 text-slate-300 rounded-xl hover:text-white hover:border-slate-500 hover:bg-slate-800 transition-colors text-sm font-medium"
+              >
+                <span className="material-symbols-outlined text-[20px]">playlist_add</span>
+                New Playlist
+              </button>
+              
+              <button 
+                onClick={() => fileInputRef.current?.click()}
+                className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-xl hover:bg-primary/90 transition-colors shadow-lg shadow-primary/20 text-sm font-medium"
+              >
+                <span className="material-symbols-outlined text-[20px]">upload_file</span>
+                Upload M3U
+              </button>
+          </div>
           <input 
             type="file" 
             ref={fileInputRef} 
@@ -123,18 +138,36 @@ const Dashboard = ({ onPlayChannel }) => {
             <div className="flex items-center gap-2 w-max">
                 <button 
                     onClick={() => handlePlaylistChange(null)}
-                    className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all ${activePlaylist === null ? 'bg-primary text-white shadow-lg shadow-primary/25' : 'bg-surface-dark text-slate-400 hover:text-white hover:bg-surface-hover border border-slate-800'}`}
+                    className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all shrink-0 ${activePlaylist === null ? 'bg-primary text-white shadow-lg shadow-primary/25' : 'bg-surface-dark text-slate-400 hover:text-white hover:bg-surface-hover border border-slate-800'}`}
                 >
                     All Channels
                 </button>
                 {playlists.map((pl, idx) => (
-                    <button 
+                    <div 
                         key={idx}
-                        onClick={() => handlePlaylistChange(pl)}
-                        className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all ${activePlaylist === pl ? 'bg-primary text-white shadow-lg shadow-primary/25' : 'bg-surface-dark text-slate-400 hover:text-white hover:bg-surface-hover border border-slate-800'}`}
+                        className={`flex items-center rounded-full transition-all shrink-0 ${activePlaylist === pl ? 'bg-primary text-white shadow-lg shadow-primary/25 pr-1.5' : 'bg-surface-dark text-slate-400 hover:text-white hover:bg-surface-hover border border-slate-800'}`}
                     >
-                        {pl}
-                    </button>
+                        <button 
+                            onClick={() => handlePlaylistChange(pl)}
+                            className={`px-4 py-1.5 text-sm font-medium ${activePlaylist === pl ? '' : ''}`}
+                        >
+                            {pl}
+                        </button>
+                        {activePlaylist === pl && (
+                            <button 
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    if(window.confirm(`Are you sure you want to delete the playlist "${pl}"?`)) {
+                                        removePlaylist(pl);
+                                    }
+                                }}
+                                className="w-5 h-5 flex items-center justify-center rounded-full hover:bg-white/20 transition-colors"
+                                title="Delete Playlist"
+                            >
+                                <span className="material-symbols-outlined text-[14px]">close</span>
+                            </button>
+                        )}
+                    </div>
                 ))}
             </div>
         </div>
@@ -198,13 +231,12 @@ const Dashboard = ({ onPlayChannel }) => {
       {editingChannel && (
           <ChannelEditorModal 
               channel={editingChannel} 
+              playlists={playlists}
               onClose={() => setEditingChannel(null)} 
               onSave={async (id, updates) => {
                   await editChannel(id, updates);
                   setEditingChannel(null);
                   if (activePlaylist && updates.playlist !== activePlaylist && activePlaylist !== null) {
-                      // Optionally, could refresh list here, but it's okay. The hook will update the state.
-                      // Actually, if we filter it out of display:
                       handlePlaylistChange(activePlaylist);
                   }
               }}
@@ -212,6 +244,13 @@ const Dashboard = ({ onPlayChannel }) => {
                   await removeChannel(id);
                   setEditingChannel(null);
               }}
+          />
+      )}
+
+      {isCreatingPlaylist && (
+          <CreatePlaylistModal 
+              onClose={() => setIsCreatingPlaylist(false)}
+              onCreate={addPlaylist}
           />
       )}
     </main>

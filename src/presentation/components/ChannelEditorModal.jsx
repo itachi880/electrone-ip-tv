@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 
-const ChannelEditorModal = ({ channel, onClose, onSave, onDelete }) => {
+const ChannelEditorModal = ({ channel, playlists = [], onClose, onSave, onDelete }) => {
     const [formData, setFormData] = useState({
         name: '',
         link: '',
@@ -79,13 +79,19 @@ const ChannelEditorModal = ({ channel, onClose, onSave, onDelete }) => {
 
                     <div className="flex flex-col gap-1.5">
                         <label className="text-sm font-semibold text-slate-300">Playlist Group</label>
-                        <input 
+                        <select 
                             name="playlist" 
                             value={formData.playlist} 
                             onChange={handleChange} 
-                            placeholder="e.g. Sports"
-                            className="bg-black/50 border border-slate-700 rounded-xl px-4 py-2.5 text-white placeholder-slate-500 focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/50 transition-all text-sm" 
-                        />
+                            className="w-full bg-black/50 border border-slate-700 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/50 transition-all text-sm appearance-none" 
+                        >
+                            <option value="">-- No Playlist --</option>
+                            {playlists.map((pl, idx) => (
+                                <option key={idx} value={pl}>
+                                    {pl}
+                                </option>
+                            ))}
+                        </select>
                     </div>
 
                     <div className="grid grid-cols-2 gap-4 mt-2">

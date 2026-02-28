@@ -10,6 +10,8 @@ contextBridge.exposeInMainWorld("api", {
 
   // Playlists
   getPlaylists: () => ipcRenderer.invoke("get-playlists"),
+  createPlaylist: (name) => ipcRenderer.invoke("create-playlist", name),
+  deletePlaylist: (name) => ipcRenderer.invoke("delete-playlist", name),
   getChannelsByPlaylist: (playlist, limit, offset) =>
     ipcRenderer.invoke("get-channels-by-playlist", { playlist, limit, offset }),
 

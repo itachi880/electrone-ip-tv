@@ -12,6 +12,14 @@ class ChannelService {
         return await window.api.getPlaylists();
     }
 
+    static async createPlaylist(name) {
+        return await window.api.createPlaylist(name);
+    }
+
+    static async deletePlaylist(name) {
+        return await window.api.deletePlaylist(name);
+    }
+
     static async getChannelsByPlaylist(playlist, limit, offset) {
         return await window.api.getChannelsByPlaylist(playlist, limit, offset);
     }

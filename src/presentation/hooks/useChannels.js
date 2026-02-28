@@ -101,6 +101,25 @@ export function useChannels(initialLimit = 20) {
         setSearchQuery('');
     }, []);
 
+    const addPlaylist = useCallback(async (name) => {
+        const success = await ChannelService.createPlaylist(name);
+        if (success) {
+            await fetchPlaylists();
+        }
+        return success;
+    }, [fetchPlaylists]);
+
+    const removePlaylist = useCallback(async (name) => {
+        const success = await ChannelService.deletePlaylist(name);
+        if (success) {
+            await fetchPlaylists();
+            if (activePlaylist === name) {
+                handlePlaylistChange(null);
+            }
+        }
+        return success;
+    }, [fetchPlaylists, activePlaylist, handlePlaylistChange]);
+
     // Global listener for background upload progress
     useEffect(() => {
         const checkInitialState = async () => {
@@ -196,6 +215,8 @@ export function useChannels(initialLimit = 20) {
         loadMore,
         handleSearch,
         handlePlaylistChange,
+        addPlaylist,
+        removePlaylist,
         uploadFile,
         uploadProgress,
         uploadStarted,

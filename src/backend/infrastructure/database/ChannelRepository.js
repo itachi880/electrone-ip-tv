@@ -35,13 +35,25 @@ class ChannelRepository {
                     is_favorite BOOLEAN DEFAULT 0,
                     playlist TEXT
                 )`, (err) => {
-                if (err) reject(err);
+                if (err) return reject(err);
 
-                // Migrations
+                // Migrations for channels
                 this.db.run(`ALTER TABLE channels ADD COLUMN is_favorite BOOLEAN DEFAULT 0`, (err) => { });
                 this.db.run(`ALTER TABLE channels ADD COLUMN user_agent TEXT`, (err) => { });
-                this.db.run(`ALTER TABLE channels ADD COLUMN playlist TEXT`, (err) => {
-                    resolve();
+                this.db.run(`ALTER TABLE channels ADD COLUMN playlist TEXT`, (err) => { });
+
+                // Create dedicated playlists table
+                this.db.run(`
+                    CREATE TABLE IF NOT EXISTS playlists (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        name TEXT UNIQUE NOT NULL
+                    )`, (err) => {
+                    if (err) return reject(err);
+
+                    // Migrate existing distinct playlists from channels into playlists
+                    this.db.run(`INSERT OR IGNORE INTO playlists (name) SELECT DISTINCT playlist FROM channels WHERE playlist IS NOT NULL AND playlist != ''`, (err) => {
+                        resolve();
+                    });
                 });
             });
         });
@@ -105,6 +117,11 @@ class ChannelRepository {
                         `INSERT INTO channels (name, referer, user_agent, link, state, is_favorite, playlist) VALUES (?, ?, ?, ?, ?, ?, ?)`,
                         [channel.name, channel.referer || null, channel.user_agent || null, channel.link, channel.state, channel.is_favorite ? 1 : 0, channel.playlist || null]
                     );
+
+                    if (channel.playlist) {
+                        await this.runQuery(`INSERT OR IGNORE INTO playlists (name) VALUES (?)`, [channel.playlist]);
+                    }
+
                     inserted++;
                 } catch (error) {
                     // E.g. UNIQUE constraint failed
@@ -157,11 +174,36 @@ class ChannelRepository {
 
     async getPlaylists() {
         try {
-            const rows = await this.allQuery(`SELECT DISTINCT playlist FROM channels WHERE playlist IS NOT NULL AND playlist != '' ORDER BY playlist ASC`);
-            return rows.map(row => row.playlist);
+            // Get from the dedicated table
+            const rows = await this.allQuery(`SELECT name FROM playlists ORDER BY name ASC`);
+            return rows.map(row => row.name);
         } catch (error) {
             console.error("Error fetching playlists:", error.message);
             return [];
+        }
+    }
+
+    async createPlaylist(name) {
+        try {
+            if (!name) return false;
+            await this.runQuery(`INSERT OR IGNORE INTO playlists (name) VALUES (?)`, [name]);
+            return true;
+        } catch (error) {
+            console.error("Error creating playlist:", error.message);
+            return false;
+        }
+    }
+
+    async deletePlaylist(name) {
+        try {
+            await this.runQuery(`DELETE FROM playlists WHERE name = ?`, [name]);
+            // Optional: Set channel playlists to null if they belonged to this?
+            // User usually wants channels kept, just not in playlist, or we don't care about orphans
+            await this.runQuery(`UPDATE channels SET playlist = NULL WHERE playlist = ?`, [name]);
+            return true;
+        } catch (error) {
+            console.error("Error deleting playlist:", error.message);
+            return false;
         }
     }
 
