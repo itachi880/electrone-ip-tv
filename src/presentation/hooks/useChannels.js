@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import ChannelService from '../../core/services/ChannelService';
 
 export function useChannels(initialLimit = 20) {
@@ -8,9 +8,14 @@ export function useChannels(initialLimit = 20) {
     const [offset, setOffset] = useState(0);
     const [hasMore, setHasMore] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
+    const [uploadProgress, setUploadProgress] = useState({ current: 0, total: 0, channelName: '' });
+    const [uploadStarted, setUploadStarted] = useState(false);
+    const loadingRef = useRef(false);
 
     const loadMore = useCallback(async () => {
-        if (!hasMore || loading) return;
+        if (!hasMore || loadingRef.current || searchQuery) return;
+
+        loadingRef.current = true;
         setLoading(true);
         const newChannels = await ChannelService.getPaginatedChannels(initialLimit, offset);
 
@@ -21,44 +26,93 @@ export function useChannels(initialLimit = 20) {
             if (!searchQuery) {
                 setDisplayedChannels(prev => [...prev, ...newChannels]);
             }
+            if (newChannels.length < initialLimit) {
+                setHasMore(false);
+            }
             setOffset(prev => prev + initialLimit);
         }
+        loadingRef.current = false;
         setLoading(false);
-    }, [hasMore, loading, offset, initialLimit, searchQuery]);
+    }, [hasMore, offset, initialLimit, searchQuery]);
 
-    const handleSearch = useCallback(async (query) => {
+    const handleSearch = useCallback((query) => {
         setSearchQuery(query);
-        if (!query.trim()) {
-            setDisplayedChannels(channels);
-            return;
-        }
+    }, []);
 
-        const localResults = channels.filter(c => c.name.toLowerCase().includes(query.toLowerCase()));
-        if (localResults.length > 0) {
-            setDisplayedChannels(localResults);
-        } else {
+    // Debounced search logic
+    useEffect(() => {
+        const timer = setTimeout(async () => {
+            if (!searchQuery.trim()) {
+                setDisplayedChannels(channels);
+                return;
+            }
+
             setLoading(true);
-            const dbResults = await ChannelService.searchChannels(query);
+            const dbResults = await ChannelService.searchChannels(searchQuery);
             setDisplayedChannels(dbResults);
 
-            // Append missing results to global list without duplicates
             setChannels(prev => {
                 const newItems = dbResults.filter(r => !prev.some(p => p.id === r.id));
                 return [...prev, ...newItems];
             });
             setLoading(false);
-        }
-    }, [channels]);
+        }, 300);
+
+        return () => clearTimeout(timer);
+    }, [searchQuery, channels]);
 
     const uploadFile = useCallback(async (fileContent) => {
         setLoading(true);
+        setUploadStarted(true);
+        setUploadProgress({ current: 0, total: 0, channelName: '' });
+
         const newChannels = await ChannelService.uploadChannelsFile(fileContent);
-        if (newChannels.length > 0) {
-            setChannels(prev => [...prev, ...newChannels]);
-            setDisplayedChannels(prev => [...prev, ...newChannels]);
-        }
-        setLoading(false);
+
+        // We do NOT clear state here instantly because the background task might still be broadcasting
+        // The background task sends `isComplete: true` which will be caught by the global listener
         return newChannels.length;
+    }, []);
+
+    // Global listener for background upload progress
+    useEffect(() => {
+        const checkInitialState = async () => {
+            if (window.api && window.api.getUploadState) {
+                const state = await window.api.getUploadState();
+                if (state.isUploading) {
+                    setUploadStarted(true);
+                    setLoading(true);
+                    setUploadProgress({ current: state.current, total: state.total, channelName: state.channelName });
+                }
+            }
+        };
+
+        checkInitialState();
+
+        const progressListener = (data) => {
+            setUploadProgress({
+                current: data.current,
+                total: data.total,
+                channelName: data.channelName
+            });
+
+            if (data.isComplete) {
+                setUploadStarted(false);
+                setLoading(false);
+                setUploadProgress({ current: 0, total: 0, channelName: '' });
+                // We could optionally trigger a reload of channels here
+                // loadMore(); // Wait, offset might be tricky. Let's just let the user see the new ones or search.
+            }
+        };
+
+        if (window.api && window.api.onUploadProgress) {
+            window.api.onUploadProgress(progressListener);
+        }
+
+        return () => {
+            if (window.api && window.api.removeUploadProgressListener) {
+                window.api.removeUploadProgressListener();
+            }
+        };
     }, []);
 
     const fetchFavorites = useCallback(async () => {
@@ -90,6 +144,8 @@ export function useChannels(initialLimit = 20) {
         loadMore,
         handleSearch,
         uploadFile,
+        uploadProgress,
+        uploadStarted,
         fetchFavorites,
         toggleFavorite
     };

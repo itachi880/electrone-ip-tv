@@ -26,5 +26,14 @@ contextBridge.exposeInMainWorld("api", {
   // Deletion
   // Clean up
   deleteDeadChannels: () => ipcRenderer.invoke("delete-dead-channels"),
-  triggerChannelScan: () => ipcRenderer.invoke("trigger-channel-scan"),
+  triggerChannelScan: (limit) => ipcRenderer.invoke("trigger-channel-scan", limit),
+  onScanProgress: (callback) => ipcRenderer.on("scan-progress", (event, data) => callback(data)),
+  removeScanProgressListener: () => ipcRenderer.removeAllListeners("scan-progress"),
+
+  onUploadProgress: (callback) => ipcRenderer.on("upload-progress", (event, data) => callback(data)),
+  removeUploadProgressListener: () => ipcRenderer.removeAllListeners("upload-progress"),
+
+  // State sync for frontend remounts
+  getScanState: () => ipcRenderer.invoke("get-scan-state"),
+  getUploadState: () => ipcRenderer.invoke("get-upload-state"),
 });

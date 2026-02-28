@@ -22,7 +22,7 @@ class ChannelController {
         });
 
         this.ipcMain.handle("insert-channels", async (event, channels) => {
-            await repository.insertChannels(channels);
+            await repository.insertChannels(channels, event.sender);
             return { success: true };
         });
 
@@ -44,12 +44,20 @@ class ChannelController {
             return await repository.deleteDeadChannels();
         });
 
-        this.ipcMain.handle("trigger-channel-scan", async () => {
+        this.ipcMain.handle("trigger-channel-scan", async (event, limit) => {
             // Trigger the execution asynchronously so we don't block the frontend
             setTimeout(() => {
-                CheckChannelHealth.executeFullScan();
+                CheckChannelHealth.executeFullScan(event.sender, limit || 50);
             }, 100);
             return true;
+        });
+
+        this.ipcMain.handle("get-scan-state", () => {
+            return CheckChannelHealth.getScanState();
+        });
+
+        this.ipcMain.handle("get-upload-state", () => {
+            return repository.getUploadState();
         });
     }
 }

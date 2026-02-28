@@ -10,7 +10,9 @@ const Dashboard = ({ onPlayChannel }) => {
     searchQuery, 
     loadMore, 
     handleSearch, 
-    uploadFile 
+    uploadFile,
+    uploadProgress,
+    uploadStarted
   } = useChannels();
 
   const handleFileUpload = (e) => {
@@ -65,7 +67,45 @@ const Dashboard = ({ onPlayChannel }) => {
       </header>
 
       <div className="flex-1 overflow-y-auto overflow-x-hidden p-8 scroll-smooth no-scrollbar">
-        {loading && channels.length === 0 && (
+        {uploadStarted && (
+          <div className="mb-8 p-6 bg-primary/5 border border-primary/20 rounded-2xl animate-in fade-in slide-in-from-top-4 duration-500">
+            <div className="flex justify-between items-center mb-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-primary/10 rounded-lg text-primary">
+                  <span className="material-symbols-outlined text-[20px] animate-spin">sync</span>
+                </div>
+                <div>
+                  <h4 className="text-white font-bold text-sm">
+                    {uploadProgress.total > 0 ? 'Importing Channels...' : 'Preparing Playlist...'}
+                  </h4>
+                  <p className="text-slate-500 text-xs truncate max-w-[200px]">
+                    {uploadProgress.total > 0 
+                      ? `Now importing: ${uploadProgress.channelName || '...'}` 
+                      : 'Parsing file content'}
+                  </p>
+                </div>
+              </div>
+              <span className="text-primary font-bold text-sm">
+                {uploadProgress.total > 0 
+                  ? `${Math.round((uploadProgress.current / uploadProgress.total) * 100)}%` 
+                  : '...'}
+              </span>
+            </div>
+            <div className="w-full bg-slate-800 rounded-full h-2 overflow-hidden">
+              <div 
+                className={`bg-primary h-full transition-all duration-300 shadow-[0_0_10px_rgba(59,130,246,0.5)] ${uploadProgress.total === 0 ? 'w-1/4 animate-pulse' : ''}`} 
+                style={uploadProgress.total > 0 ? { width: `${(uploadProgress.current / uploadProgress.total) * 100}%` } : {}}
+              ></div>
+            </div>
+            {uploadProgress.total > 0 && (
+              <div className="mt-2 text-[10px] text-slate-500 text-right font-mono tracking-tighter uppercase">
+                {uploadProgress.current} / {uploadProgress.total} Channels Processed
+              </div>
+            )}
+          </div>
+        )}
+
+        {loading && channels.length === 0 && !uploadStarted && (
           <div className="flex h-64 items-center justify-center">
              <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
           </div>

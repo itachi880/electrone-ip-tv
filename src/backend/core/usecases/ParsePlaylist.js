@@ -23,6 +23,8 @@ class ParsePlaylist {
                 channels.push(currentChannelData);
             } else if (line.includes("http-referrer") && currentChannelData) {
                 currentChannelData.referer = line.split("http-referrer=")[1].trim();
+            } else if (line.includes("http-user-agent") && currentChannelData) {
+                currentChannelData.user_agent = line.split("http-user-agent=")[1].trim();
             } else if (!line.startsWith("#") && line.trim() !== "" && currentChannelData) {
                 currentChannelData.link = line.trim();
             }
@@ -33,6 +35,7 @@ class ParsePlaylist {
             (data) => new Channel({
                 name: data.name,
                 referer: data.referer,
+                user_agent: data.user_agent || null,
                 link: data.link,
                 state: null
             })

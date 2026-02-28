@@ -45,10 +45,18 @@ app.whenReady().then(() => {
   });
 
   session.defaultSession.webRequest.onBeforeSendHeaders((details, callback) => {
+    // Referer Swap (HLS methodology)
     if (details.requestHeaders["from"]) {
       details.requestHeaders["Referer"] = details.requestHeaders["from"];
       delete details.requestHeaders["from"];
     }
+
+    // User-Agent Swap (New Reliability Layer)
+    if (details.requestHeaders["x-user-agent"]) {
+      details.requestHeaders["User-Agent"] = details.requestHeaders["x-user-agent"];
+      delete details.requestHeaders["x-user-agent"];
+    }
+
     callback({ cancel: false, requestHeaders: details.requestHeaders });
   });
 

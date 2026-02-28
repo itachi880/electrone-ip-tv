@@ -29,15 +29,16 @@ class ChannelRepository {
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     name TEXT NOT NULL,
                     referer TEXT,
+                    user_agent TEXT,
                     link TEXT NOT NULL UNIQUE,
                     state TEXT,
                     is_favorite BOOLEAN DEFAULT 0
                 )`, (err) => {
                 if (err) reject(err);
 
-                // Add is_favorite if migration from old table is needed
-                this.db.run(`ALTER TABLE channels ADD COLUMN is_favorite BOOLEAN DEFAULT 0`, (err) => {
-                    // Ignore error if column already exists
+                // Migrations
+                this.db.run(`ALTER TABLE channels ADD COLUMN is_favorite BOOLEAN DEFAULT 0`, (err) => { });
+                this.db.run(`ALTER TABLE channels ADD COLUMN user_agent TEXT`, (err) => {
                     resolve();
                 });
             });
@@ -62,20 +63,73 @@ class ChannelRepository {
         });
     }
 
-    async insertChannels(channels) {
+    getUploadState() {
+        return {
+            isUploading: this.isUploading,
+            ...this.uploadProgress
+        };
+    }
+
+    async insertChannels(channels, sender = null) {
+        if (this.isUploading) {
+            console.log(`[Repository] Upload already in progress. Syncing UI...`);
+            this.activeUploadSender = sender;
+            if (this.activeUploadSender) {
+                this.activeUploadSender.send('upload-progress', {
+                    current: this.uploadProgress.current,
+                    total: this.uploadProgress.total,
+                    channelName: this.uploadProgress.channelName,
+                    isComplete: false
+                });
+            }
+            return 0; // Return 0 inserted for the concurrent call
+        }
+
+        this.isUploading = true;
+        this.activeUploadSender = sender;
+        const total = channels.length;
+        this.uploadProgress = { current: 0, total, channelName: '' };
+
         let inserted = 0;
-        for (const channel of channels) {
-            try {
-                await this.runQuery(
-                    `INSERT INTO channels (name, referer, link, state, is_favorite) VALUES (?, ?, ?, ?, ?)`,
-                    [channel.name, channel.referer || null, channel.link, channel.state, channel.is_favorite ? 1 : 0]
-                );
-                inserted++;
-            } catch (error) {
-                // E.g. UNIQUE constraint failed
-                continue;
+
+        try {
+            for (let i = 0; i < total; i++) {
+                const channel = channels[i];
+                this.uploadProgress.current = i + 1;
+                this.uploadProgress.channelName = channel.name;
+
+                try {
+                    await this.runQuery(
+                        `INSERT INTO channels (name, referer, user_agent, link, state, is_favorite) VALUES (?, ?, ?, ?, ?, ?)`,
+                        [channel.name, channel.referer || null, channel.user_agent || null, channel.link, channel.state, channel.is_favorite ? 1 : 0]
+                    );
+                    inserted++;
+                } catch (error) {
+                    // E.g. UNIQUE constraint failed
+                }
+
+                // Report progress every 5 items for a smoother UI, or at the end
+                if (this.activeUploadSender && (i % 5 === 0 || i === total - 1)) {
+                    this.activeUploadSender.send('upload-progress', {
+                        current: this.uploadProgress.current,
+                        total: this.uploadProgress.total,
+                        channelName: this.uploadProgress.channelName,
+                        isComplete: false // We will send true in the finally block
+                    });
+                }
+            }
+        } finally {
+            this.isUploading = false;
+            if (this.activeUploadSender) {
+                this.activeUploadSender.send('upload-progress', {
+                    current: this.uploadProgress.current,
+                    total: this.uploadProgress.total,
+                    channelName: this.uploadProgress.channelName,
+                    isComplete: true
+                });
             }
         }
+
         return inserted;
     }
 

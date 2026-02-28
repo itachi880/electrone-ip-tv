@@ -1,6 +1,100 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 
 const Settings = () => {
+  const [scanState, setScanState] = useState({
+    isScanning: false,
+    current: 0,
+    total: 0,
+    channelName: '',
+    error: false
+  });
+  const [debugLogs, setDebugLogs] = useState([]);
+  
+  // Settings State
+  const [dvrBuffer, setDvrBuffer] = useState(
+    localStorage.getItem('dvrBufferLength') || '15'
+  );
+
+  useEffect(() => {
+    // Check initial state in case a scan is already running in the background
+    const checkInitialState = async () => {
+      if (window.api && window.api.getScanState) {
+        const state = await window.api.getScanState();
+        if (state.isScanning) {
+          setScanState(prev => ({
+            ...prev,
+            isScanning: true,
+            current: state.current,
+            total: state.total,
+            channelName: state.channelName
+          }));
+          if (state.debugLogs && state.debugLogs.length > 0) {
+            setDebugLogs(state.debugLogs);
+          }
+        }
+      }
+    };
+    
+    checkInitialState();
+
+    // Listen for scan progress events
+    window.api.onScanProgress((data) => {
+      if (data.error) {
+        setScanState(prev => ({ ...prev, isScanning: false, error: true }));
+        alert("An error occurred during the scan.");
+        return;
+      }
+
+      if (data.debugLogs && data.debugLogs.length > 0) {
+        setDebugLogs(prev => [...prev, ...data.debugLogs]);
+      }
+
+      setScanState(prev => {
+        // If we were already complete, don't revert to scanning
+        if (!prev.isScanning && data.current < data.total && !data.isComplete) {
+            return prev;
+        }
+
+        return {
+          isScanning: !data.isComplete,
+          current: data.current,
+          total: data.total,
+          channelName: data.channelName || prev.channelName,
+          error: false
+        };
+      });
+
+      if (data.isComplete) {
+         setTimeout(() => {
+           alert("Scan completed successfully!");
+           setScanState(prev => ({ 
+             ...prev, 
+             isScanning: false, 
+             channelName: '',
+             current: data.total // Match total
+           }));
+         }, 500);
+      }
+    });
+
+    return () => {
+      if (window.api && window.api.removeScanProgressListener) {
+        window.api.removeScanProgressListener();
+      }
+    };
+  }, []);
+
+  const handleStartScan = async () => {
+    if (scanState.isScanning) return;
+    setDebugLogs([]);
+    setScanState(prev => ({ ...prev, isScanning: true, current: 0, total: 0, channelName: 'Initializing...', error: false }));
+    const limit = scanState.concurrencyLimit || 50;
+    await window.api.triggerChannelScan(limit);
+  };
+
+  const scanPercent = scanState.total > 0 ? Math.round((scanState.current / scanState.total) * 100) : 0;
+
+
   return (
     <main className="flex-1 overflow-y-auto p-8 lg:p-12 relative bg-background-light dark:bg-background-dark">
       <div className="max-w-4xl mx-auto">
@@ -36,6 +130,32 @@ const Settings = () => {
                         </div>
                     </div>
                 </label>
+              </div>
+            </div>
+
+            {/* DVR Buffer Selection */}
+            <div className="bg-white dark:bg-[#1e1e24] p-6 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm">
+              <div className="flex justify-between items-start mb-6">
+                <div>
+                  <h3 className="text-lg font-bold mb-1">DVR Buffer Length</h3>
+                  <p className="text-slate-500 dark:text-slate-400 text-sm">Amount of live stream to buffer in memory for rewinding.</p>
+                </div>
+              </div>
+              <div className="relative">
+                <select 
+                  value={dvrBuffer}
+                  onChange={(e) => setDvrBuffer(e.target.value)}
+                  className="block w-full rounded-lg border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-[#151520] text-slate-900 dark:text-white focus:border-primary focus:ring-primary shadow-sm py-3 px-4 appearance-none cursor-pointer"
+                >
+                  <option value="15">15 Seconds (Low Memory)</option>
+                  <option value="30">30 Seconds</option>
+                  <option value="60">60 Seconds (1 Minute)</option>
+                  <option value="120">120 Seconds (2 Minutes)</option>
+                  <option value="300">300 Seconds (5 Minutes)</option>
+                </select>
+                <div className="absolute inset-y-0 right-0 flex items-center px-4 pointer-events-none text-slate-400">
+                  <span className="material-symbols-outlined text-sm">expand_more</span>
+                </div>
               </div>
             </div>
           </div>
@@ -82,15 +202,63 @@ const Settings = () => {
                 </div>
                 <p className="text-slate-500 dark:text-slate-400 text-sm">Scan all channels to verify stream liveliness and flag dead links.</p>
               </div>
+
+              {!scanState.isScanning && (
+                <div className="mb-4 flex items-center justify-between bg-slate-50 dark:bg-slate-800/50 p-3 rounded-lg border border-slate-100 dark:border-slate-800">
+                  <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Concurrency Limit</label>
+                  <input 
+                    type="number" 
+                    min="1" 
+                    max="1000" 
+                    value={scanState.concurrencyLimit || 50} 
+                    onChange={(e) => setScanState(prev => ({ ...prev, concurrencyLimit: parseInt(e.target.value) || 50 }))}
+                    className="w-20 px-2 py-1 text-sm bg-white dark:bg-[#151520] border border-slate-200 dark:border-slate-700 rounded text-center focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary"
+                  />
+                </div>
+              )}
+              
+              {scanState.isScanning && (
+                <div className="mb-4 w-full">
+                  <div className="flex justify-between text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">
+                    <span className="truncate max-w-[70%] text-primary">{scanState.channelName || 'Scanning...'}</span>
+                    <span>{scanState.current} / {scanState.total} ({scanPercent}%)</span>
+                  </div>
+                  <div className="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-2">
+                    <div className="bg-primary h-2 rounded-full transition-all duration-300" style={{ width: `${scanPercent}%` }}></div>
+                  </div>
+                </div>
+              )}
+
+              {debugLogs.length > 0 && (
+                <div className="mb-4 w-full bg-slate-900 rounded-lg p-3 overflow-y-auto" style={{ maxHeight: '150px' }}>
+                  <div className="text-xs font-bold text-slate-400 mb-2">Scanner Debug Logs:</div>
+                  {debugLogs.slice(-15).map((log, idx) => (
+                    <div key={idx} className="text-[10px] text-green-400 font-mono break-all mb-1">{log}</div>
+                  ))}
+                </div>
+              )}
+
               <button 
-                onClick={async () => {
-                  alert("Scan started in the background. Check channel statuses on the dashboard.");
-                  await window.api.triggerChannelScan();
-                }}
-                className="w-full mt-2 px-4 py-2.5 rounded-lg text-sm font-bold bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-500/20 hover:bg-blue-100 dark:hover:bg-blue-500/20 transition-all flex items-center justify-center gap-2"
+                onClick={handleStartScan}
+
+                disabled={scanState.isScanning}
+                className={`w-full mt-2 px-4 py-2.5 rounded-lg text-sm font-bold flex items-center justify-center gap-2 transition-all ${
+                  scanState.isScanning 
+                    ? 'bg-slate-100 dark:bg-slate-800 text-slate-400 cursor-not-allowed border border-transparent'
+                    : 'bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-500/20 hover:bg-blue-100 dark:hover:bg-blue-500/20'
+                }`}
               >
-                <span className="material-symbols-outlined text-[20px]">radar</span>
-                Start Background Scan
+                {scanState.isScanning ? (
+                  <>
+                    <span className="material-symbols-outlined text-[20px] animate-spin">sync</span>
+                    Scanning Network...
+                  </>
+                ) : (
+                  <>
+                    <span className="material-symbols-outlined text-[20px]">radar</span>
+                    Start Background Scan
+                  </>
+                )}
               </button>
             </div>
 
@@ -121,7 +289,13 @@ const Settings = () => {
         </section>
 
         <div className="flex items-center justify-end gap-4 mt-8 pt-8 border-t border-slate-200 dark:border-slate-800">
-          <button className="px-8 py-3 rounded-lg text-sm font-bold bg-primary text-white hover:bg-primary/90 shadow-lg shadow-primary/25 transition-all flex items-center gap-2">
+          <button 
+            onClick={() => {
+              localStorage.setItem('dvrBufferLength', dvrBuffer);
+              alert('Settings saved successfully!');
+            }}
+            className="px-8 py-3 rounded-lg text-sm font-bold bg-primary text-white hover:bg-primary/90 shadow-lg shadow-primary/25 transition-all flex items-center gap-2"
+          >
             <span className="material-symbols-outlined text-lg">save</span>
             Save Changes
           </button>

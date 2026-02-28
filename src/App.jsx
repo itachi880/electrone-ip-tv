@@ -31,6 +31,7 @@ function App() {
          <PlayerPage 
             channel={selectedChannel} 
             onBack={() => setCurrentPage('dashboard')} 
+            onPlayChannel={navigateToPlayer}
          />
       )}
     </div>
