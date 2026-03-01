@@ -207,6 +207,23 @@ class ChannelRepository {
         }
     }
 
+    async updatePlaylist(oldName, newName) {
+        try {
+            if (!oldName || !newName) return false;
+
+            // 1. Update the playlist name in the playlists table
+            await this.runQuery(`UPDATE playlists SET name = ? WHERE name = ?`, [newName, oldName]);
+
+            // 2. Update all channels that were in the old playlist
+            await this.runQuery(`UPDATE channels SET playlist = ? WHERE playlist = ?`, [newName, oldName]);
+
+            return true;
+        } catch (error) {
+            console.error("Error updating playlist:", error.message);
+            return false;
+        }
+    }
+
     async getChannelsByPlaylist(playlist, limit, offset) {
         try {
             const rows = await this.allQuery(`SELECT * FROM channels WHERE playlist = ? LIMIT ? OFFSET ?`, [playlist, limit, offset]);

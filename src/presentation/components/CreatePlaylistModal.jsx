@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import toast from 'react-hot-toast';
 
 const CreatePlaylistModal = ({ onClose, onCreate }) => {
     const [name, setName] = useState('');
@@ -15,9 +16,11 @@ const CreatePlaylistModal = ({ onClose, onCreate }) => {
 
         const success = await onCreate(trimmedName);
         if (success) {
+            toast.success(`Playlist "${trimmedName}" created`);
             onClose();
         } else {
             setError('Failed to create playlist. It may already exist.');
+            toast.error('Failed to create playlist');
         }
     };
 

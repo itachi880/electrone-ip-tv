@@ -79,19 +79,24 @@ const ChannelEditorModal = ({ channel, playlists = [], onClose, onSave, onDelete
 
                     <div className="flex flex-col gap-1.5">
                         <label className="text-sm font-semibold text-slate-300">Playlist Group</label>
-                        <select 
-                            name="playlist" 
-                            value={formData.playlist} 
-                            onChange={handleChange} 
-                            className="w-full bg-black/50 border border-slate-700 rounded-xl px-4 py-2.5 text-white focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/50 transition-all text-sm appearance-none" 
-                        >
-                            <option value="">-- No Playlist --</option>
-                            {playlists.map((pl, idx) => (
-                                <option key={idx} value={pl}>
-                                    {pl}
-                                </option>
-                            ))}
-                        </select>
+                        <div className="relative">
+                            <input 
+                                name="playlist" 
+                                list="playlist-options"
+                                value={formData.playlist} 
+                                onChange={handleChange} 
+                                placeholder="Type or select a playlist"
+                                className="w-full bg-black/50 border border-slate-700 rounded-xl px-4 py-2.5 pl-10 text-white focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/50 transition-all text-sm" 
+                            />
+                            <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-[18px]">
+                                library_add
+                            </span>
+                            <datalist id="playlist-options">
+                                {playlists.map((pl, idx) => (
+                                    <option key={idx} value={pl} />
+                                ))}
+                            </datalist>
+                        </div>
                     </div>
 
                     <div className="grid grid-cols-2 gap-4 mt-2">

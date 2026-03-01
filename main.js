@@ -9,23 +9,23 @@ const createWindow = async () => {
     width: 1200,
     height: 800,
     webPreferences: {
-      webSecurity: false, // Disables CORS restrictions (only for dev/IPTV streams!)
       preload: path.join(__dirname, "preload.js"),
+      webSecurity: false,
     },
   });
   mainWindow.maximize();
 
   // If the app was already built use the build as production else use local as development
-  // if (fs.existsSync(path.join(__dirname, "index.html"))) {
-  //   mainWindow.loadFile(path.join(__dirname, "index.html"));
-  //   mainWindow.webContents.devToolsWebContents?.addListener(
-  //     "devtools-opened",
-  //     () => {
-  //       // mainWindow.webContents.closeDevTools();
-  //     }
-  //   );
-  //   return;
-  // }
+  if (fs.existsSync(path.join(__dirname, "dist", "index.html"))) {
+    mainWindow.loadFile(path.join(__dirname, "dist", "index.html"));
+    mainWindow.webContents.devToolsWebContents?.addListener(
+      "devtools-opened",
+      () => {
+        mainWindow.webContents.closeDevTools();
+      }
+    );
+    return;
+  }
 
   // load react app (dev mode)
   mainWindow.loadURL("http://localhost:3000");
@@ -37,9 +37,7 @@ app.whenReady().then(() => {
     callback({
       responseHeaders: {
         ...details.responseHeaders,
-        "Content-Security-Policy": [
-          "default-src *; script-src * 'unsafe-inline' 'unsafe-eval'; style-src * 'unsafe-inline'; img-src * data: blob:; media-src * blob:;",
-        ],
+
       },
     });
   });

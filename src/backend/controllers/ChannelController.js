@@ -33,6 +33,10 @@ class ChannelController {
             return await repository.deletePlaylist(name);
         });
 
+        this.ipcMain.handle("update-playlist", async (event, { oldName, newName }) => {
+            return await repository.updatePlaylist(oldName, newName);
+        });
+
         this.ipcMain.handle("get-channels-by-playlist", async (event, { playlist, limit, offset }) => {
             return await repository.getChannelsByPlaylist(playlist, limit, offset);
         });

@@ -20,6 +20,10 @@ class ChannelService {
         return await window.api.deletePlaylist(name);
     }
 
+    static async updatePlaylist(oldName, newName) {
+        return await window.api.updatePlaylist(oldName, newName);
+    }
+
     static async getChannelsByPlaylist(playlist, limit, offset) {
         return await window.api.getChannelsByPlaylist(playlist, limit, offset);
     }

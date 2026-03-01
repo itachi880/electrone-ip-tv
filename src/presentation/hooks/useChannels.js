@@ -120,6 +120,18 @@ export function useChannels(initialLimit = 20) {
         return success;
     }, [fetchPlaylists, activePlaylist, handlePlaylistChange]);
 
+    const updatePlaylistName = useCallback(async (oldName, newName) => {
+        if (!oldName || !newName || oldName === newName) return false;
+        const success = await ChannelService.updatePlaylist(oldName, newName);
+        if (success) {
+            await fetchPlaylists();
+            if (activePlaylist === oldName) {
+                setActivePlaylist(newName);
+            }
+        }
+        return success;
+    }, [fetchPlaylists, activePlaylist]);
+
     // Global listener for background upload progress
     useEffect(() => {
         const checkInitialState = async () => {
@@ -217,6 +229,7 @@ export function useChannels(initialLimit = 20) {
         handlePlaylistChange,
         addPlaylist,
         removePlaylist,
+        updatePlaylistName,
         uploadFile,
         uploadProgress,
         uploadStarted,

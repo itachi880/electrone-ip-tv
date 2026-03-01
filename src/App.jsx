@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { Toaster } from 'react-hot-toast';
 import Dashboard from "./presentation/pages/Dashboard";
 import PlayerPage from "./presentation/pages/PlayerPage";
 import Favorites from "./presentation/pages/Favorites";
@@ -16,6 +17,23 @@ function App() {
 
   return (
     <div className="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 font-display overflow-hidden h-screen flex relative">
+      <Toaster 
+        position="top-center"
+        toastOptions={{
+          style: {
+            background: '#1e1e2d',
+            color: '#fff',
+            border: '1px solid rgba(255,255,255,0.1)',
+            borderRadius: '12px',
+          },
+          success: {
+            iconTheme: {
+              primary: '#3b82f6',
+              secondary: '#fff',
+            },
+          },
+        }}
+      />
       {/* Sidebar Navigation */}
       {currentPage !== 'player' && (
         <Sidebar currentPage={currentPage} setCurrentPage={setCurrentPage} />

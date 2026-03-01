@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState, useMemo } from 'react';
 import Hls from 'hls.js';
 import { useChannels } from '../hooks/useChannels';
+import toast from 'react-hot-toast';
 import ChannelEditorModal from '../components/ChannelEditorModal';
 
 const PlayerPage = ({ channel, onBack, onPlayChannel }) => {
@@ -30,7 +31,7 @@ const PlayerPage = ({ channel, onBack, onPlayChannel }) => {
   const [dvrBufferConfig, setDvrBufferConfig] = useState(15);
   const [isLiveLive, setIsLiveLive] = useState(true);
 
-  const { channels, toggleFavorite, loadMore, hasMore, handleSearch, loading: loadingChannels, editChannel, removeChannel } = useChannels(25); // Get channels for sidebar
+  const { channels, playlists, toggleFavorite, loadMore, hasMore, handleSearch, loading: loadingChannels, editChannel, removeChannel } = useChannels(25); // Get channels for sidebar
   
   useEffect(() => {
     // Load config
@@ -586,20 +587,31 @@ const PlayerPage = ({ channel, onBack, onPlayChannel }) => {
         {editingChannel && (
             <ChannelEditorModal 
                 channel={editingChannel} 
+                playlists={playlists}
                 onClose={() => setEditingChannel(null)} 
                 onSave={async (id, updates) => {
-                    await editChannel(id, updates);
-                    setEditingChannel(null);
-                    if (id === channel.id) {
-                        // Reflect the name dynamically if playing channel was edited
-                        channel.name = updates.name;
+                    const success = await editChannel(id, updates);
+                    if (success) {
+                        toast.success(`Channel "${updates.name}" updated`);
+                        setEditingChannel(null);
+                        if (id === channel.id) {
+                            // Reflect the name dynamically if playing channel was edited
+                            channel.name = updates.name;
+                        }
+                    } else {
+                        toast.error('Failed to update channel');
                     }
                 }}
                 onDelete={async (id) => {
-                    await removeChannel(id);
-                    setEditingChannel(null);
-                    if (id === channel.id) {
-                        onBack(); // close player if playing deleted channel
+                    const success = await removeChannel(id);
+                    if (success) {
+                        toast.success('Channel deleted');
+                        setEditingChannel(null);
+                        if (id === channel.id) {
+                            onBack(); // close player if playing deleted channel
+                        }
+                    } else {
+                        toast.error('Failed to delete channel');
                     }
                 }}
             />

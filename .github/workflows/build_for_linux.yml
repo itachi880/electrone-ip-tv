@@ -51,8 +51,8 @@ jobs:
         if: github.event_name == 'push' # Only create a release on main branch push
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v1.0.${{ github.run_number }}
-          name: "Electron IPTV Ubuntu Build v1.0.${{ github.run_number }}"
+          tag_name: v2.0.0
+          name: "Electron IPTV Ubuntu Build v2.0.0"
           body: "Automatically built release for Ubuntu."
           files: release/electron-ubuntu.tar.gz
         env:

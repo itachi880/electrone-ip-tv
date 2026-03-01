@@ -1,5 +1,6 @@
 import React, { useRef, useState } from 'react';
 import { useChannels } from '../hooks/useChannels';
+import toast from 'react-hot-toast';
 import ChannelEditorModal from '../components/ChannelEditorModal';
 import CreatePlaylistModal from '../components/CreatePlaylistModal';
 
@@ -7,6 +8,8 @@ const Dashboard = ({ onPlayChannel }) => {
   const fileInputRef = useRef(null);
   const [editingChannel, setEditingChannel] = useState(null);
   const [isCreatingPlaylist, setIsCreatingPlaylist] = useState(false);
+  const [editingPlaylist, setEditingPlaylist] = useState(null); // { oldName: string, newName: string }
+  const [isRenaming, setIsRenaming] = useState(false);
   const { 
     channels, 
     loading, 
@@ -23,7 +26,8 @@ const Dashboard = ({ onPlayChannel }) => {
     uploadProgress,
     uploadStarted,
     editChannel,
-    removeChannel
+    removeChannel,
+    updatePlaylistName
   } = useChannels();
 
   const handleFileUpload = (e) => {
@@ -147,25 +151,75 @@ const Dashboard = ({ onPlayChannel }) => {
                         key={idx}
                         className={`flex items-center rounded-full transition-all shrink-0 ${activePlaylist === pl ? 'bg-primary text-white shadow-lg shadow-primary/25 pr-1.5' : 'bg-surface-dark text-slate-400 hover:text-white hover:bg-surface-hover border border-slate-800'}`}
                     >
-                        <button 
-                            onClick={() => handlePlaylistChange(pl)}
-                            className={`px-4 py-1.5 text-sm font-medium ${activePlaylist === pl ? '' : ''}`}
-                        >
-                            {pl}
-                        </button>
-                        {activePlaylist === pl && (
-                            <button 
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    if(window.confirm(`Are you sure you want to delete the playlist "${pl}"?`)) {
-                                        removePlaylist(pl);
-                                    }
-                                }}
-                                className="w-5 h-5 flex items-center justify-center rounded-full hover:bg-white/20 transition-colors"
-                                title="Delete Playlist"
-                            >
-                                <span className="material-symbols-outlined text-[14px]">close</span>
-                            </button>
+                        {isRenaming && activePlaylist === pl ? (
+                            <div className="flex items-center gap-1.5 px-2 py-1">
+                                <input 
+                                    autoFocus
+                                    value={editingPlaylist?.newName || ''}
+                                    onChange={(e) => setEditingPlaylist(prev => ({ ...prev, newName: e.target.value }))}
+                                    onBlur={() => {
+                                        if (editingPlaylist.newName === editingPlaylist.oldName) setIsRenaming(false);
+                                    }}
+                                    onKeyDown={async (e) => {
+                                        if (e.key === 'Enter') {
+                                            const success = await updatePlaylistName(editingPlaylist.oldName, editingPlaylist.newName);
+                                            if (success) {
+                                                toast.success('Playlist renamed');
+                                                setIsRenaming(false);
+                                            } else {
+                                                toast.error('Failed to rename playlist');
+                                            }
+                                        } else if (e.key === 'Escape') {
+                                            setIsRenaming(false);
+                                        }
+                                    }}
+                                    className="bg-black/40 border-none rounded-md px-2 py-0.5 text-xs text-white focus:outline-none focus:ring-1 focus:ring-white/30"
+                                />
+                                <button onClick={() => setIsRenaming(false)} className="text-white/60 hover:text-white">
+                                    <span className="material-symbols-outlined text-[14px]">close</span>
+                                </button>
+                            </div>
+                        ) : (
+                            <>
+                                <button 
+                                    onClick={() => handlePlaylistChange(pl)}
+                                    className={`px-4 py-1.5 text-sm font-medium ${activePlaylist === pl ? '' : ''}`}
+                                >
+                                    {pl}
+                                </button>
+                                {activePlaylist === pl && (
+                                    <div className="flex items-center gap-0.5 ml-1 mr-1">
+                                        <button 
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                setEditingPlaylist({ oldName: pl, newName: pl });
+                                                setIsRenaming(true);
+                                            }}
+                                            className="w-5 h-5 flex items-center justify-center rounded-full hover:bg-white/20 transition-colors"
+                                            title="Rename Playlist"
+                                        >
+                                            <span className="material-symbols-outlined text-[14px]">edit</span>
+                                        </button>
+                                        <button 
+                                            onClick={async (e) => {
+                                                e.stopPropagation();
+                                                if(window.confirm(`Are you sure you want to delete the playlist "${pl}"?\n\nNOTE: Channels in this playlist will NOT be deleted.`)) {
+                                                    const success = await removePlaylist(pl);
+                                                    if (success) {
+                                                        toast.success(`Playlist "${pl}" deleted`);
+                                                    } else {
+                                                        toast.error('Failed to delete playlist');
+                                                    }
+                                                }
+                                            }}
+                                            className="w-5 h-5 flex items-center justify-center rounded-full hover:bg-white/20 transition-colors"
+                                            title="Delete Playlist"
+                                        >
+                                            <span className="material-symbols-outlined text-[14px]">close</span>
+                                        </button>
+                                    </div>
+                                )}
+                            </>
                         )}
                     </div>
                 ))}
@@ -234,15 +288,25 @@ const Dashboard = ({ onPlayChannel }) => {
               playlists={playlists}
               onClose={() => setEditingChannel(null)} 
               onSave={async (id, updates) => {
-                  await editChannel(id, updates);
-                  setEditingChannel(null);
-                  if (activePlaylist && updates.playlist !== activePlaylist && activePlaylist !== null) {
-                      handlePlaylistChange(activePlaylist);
+                  const success = await editChannel(id, updates);
+                  if (success) {
+                      toast.success(`Channel "${updates.name}" updated`);
+                      setEditingChannel(null);
+                      if (activePlaylist && updates.playlist !== activePlaylist && activePlaylist !== null) {
+                          handlePlaylistChange(activePlaylist);
+                      }
+                  } else {
+                      toast.error('Failed to update channel');
                   }
               }}
               onDelete={async (id) => {
-                  await removeChannel(id);
-                  setEditingChannel(null);
+                  const success = await removeChannel(id);
+                  if (success) {
+                      toast.success('Channel deleted');
+                      setEditingChannel(null);
+                  } else {
+                      toast.error('Failed to delete channel');
+                  }
               }}
           />
       )}

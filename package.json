@@ -39,6 +39,7 @@
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.2.1",
+    "react-hot-toast": "^2.6.0",
     "sqlite3": "^5.1.7",
     "tailwindcss": "^4.2.1"
   },
