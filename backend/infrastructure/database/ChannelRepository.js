@@ -5,7 +5,7 @@ const Channel = require('../../core/entities/Channel');
 
 class ChannelRepository {
     constructor() {
-        const dbPath = path.join(__dirname, '..', '..', '..', '..', 'database.db');
+        const dbPath = path.join(__dirname, '..', '..', '..', 'database.db');
 
         if (!fs.existsSync(dbPath)) {
             console.log("Database file not found. Creating a new one...");

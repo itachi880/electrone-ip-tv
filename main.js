@@ -1,8 +1,8 @@
 const { app, BrowserWindow, session, ipcMain } = require("electron");
 const path = require("path");
 const fs = require("fs");
-const ChannelController = require("./src/backend/controllers/ChannelController");
-const CheckChannelHealth = require("./src/backend/core/usecases/CheckChannelHealth");
+const ChannelController = require("./backend/controllers/ChannelController");
+const CheckChannelHealth = require("./backend/core/usecases/CheckChannelHealth");
 
 const createWindow = async () => {
   const mainWindow = new BrowserWindow({
