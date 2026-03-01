@@ -2,12 +2,8 @@ name: Build & Release Electron App for Ubuntu
 
 on:
   push:
-    branches:
-      - main
-  pull_request:
-    branches:
-      - main
-  workflow_dispatch:
+    tags:
+      - 'v*'
 
 jobs:
   build:
@@ -48,11 +44,10 @@ jobs:
           path: release/electron-ubuntu.tar.gz
 
       - name: Create GitHub Release & Upload `.deb`
-        if: github.event_name == 'push' # Only create a release on main branch push
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v2.0.0
-          name: "Electron IPTV Ubuntu Build v2.0.0"
+          tag_name: ${{ github.ref_name }}
+          name: "Electron IPTV Ubuntu Build ${{ github.ref_name }}"
           body: "Automatically built release for Ubuntu."
           files: release/electron-ubuntu.tar.gz
         env:
