@@ -13,6 +13,12 @@ const ELECTRON_BASE_PATH = path.join(
 
 const install_linux_bash = ({ short_cut_name }) => `#!/bin/bash
 
+if [ "$EUID" -ne 0 ]; then
+  echo "Please run as root (sudo ./install.sh)"
+  exit 1
+fi
+
+
 # Variables
 INSTALL_DIR="/opt/${short_cut_name.replaceAll(
   " ",
@@ -194,7 +200,7 @@ try {
 }
 
 // Move React build output
-const buildPath = path.resolve(__dirname, "build");
+const buildPath = path.resolve(__dirname, "dist");
 const resourcesPath = path.join(output, "resources");
 
 if (fs.existsSync(buildPath)) {
@@ -304,7 +310,7 @@ fs.readdirSync(path.join(output, "resources", "app", "node_modules")).forEach(
         return;
 
       fs.rmSync(path.join(output, "resources", "app", "node_modules", e));
-    } catch (e) {}
+    } catch (e) { }
   }
 );
 
