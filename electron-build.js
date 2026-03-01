@@ -13,85 +13,93 @@ const ELECTRON_BASE_PATH = path.join(
 
 const install_linux_bash = ({ short_cut_name }) => `#!/bin/bash
 
+# --- Require root ---
 if [ "$EUID" -ne 0 ]; then
   echo "Please run as root (sudo ./install.sh)"
   exit 1
 fi
 
 
-# Variables
-INSTALL_DIR="/opt/${short_cut_name.replaceAll(
-  " ",
-  "_"
-)}"  # Path where we want to install the app
-USERPC=$(logname)
-DESKTOP_DIR=$(sudo -u "$USERPC" xdg-user-dir DESKTOP)  # Desktop path
-APP_NAME="${short_cut_name}"  # Name of the app
-DESKTOP_FILE_NAME="${short_cut_name.replaceAll(
-  " ",
-  "_"
-)}.desktop"  # Name of the .desktop file
-ICON_PATH="/opt/ip-tv/resources/icon.png"  # Path to the app icon (optional)
+# --- Variables ---
+INSTALL_DIR="/opt/${short_cut_name.replaceAll(" ", "_")}"  # Install path
+USERPC=\${SUDO_USER:-$(whoami)}                             # Desktop owner
+DESKTOP_DIR=$(sudo -u "\$USERPC" xdg-user-dir DESKTOP)      # Desktop path
+APP_NAME="${short_cut_name}"                                 # App name
+DESKTOP_FILE_NAME="${short_cut_name.replaceAll(" ", "_")}.desktop"  # Desktop file
+ICON_PATH="\$INSTALL_DIR/resources/icon.png"                # App icon
+# --- Step 0: Check for existing install ---
+if [ -d "$INSTALL_DIR" ]; then
+    echo "An existing installation was found at $INSTALL_DIR."
+    read -p "Do you want to remove it and continue? [y/N]: " response
+    case "$response" in
+        [yY][eE][sS]|[yY])
+            echo "Removing old installation..."
+            # Stop any running instance first
+            pkill -f "$INSTALL_DIR/electron" 2>/dev/null || true
+            rm -rf "$INSTALL_DIR"
+            echo "Old installation removed."
+            ;;
+        *)
+            echo "Installation aborted by user."
+            exit 1
+            ;;
+    esac
+fi
+# --- Step 1: Install files ---
+echo "Installing files to \$INSTALL_DIR..."
+mkdir -p "\$INSTALL_DIR"
+cp -r ./* "\$INSTALL_DIR/" || { echo "Failed to copy files. Exiting."; exit 1; }
 
-# Step 1: Install files to the desired directory
-echo "Installing files to $INSTALL_DIR..."
-
-# Create the installation directory if it doesn't exist
-sudo mkdir -p "$INSTALL_DIR"
-
-# Copy files to the install directory (adjust as necessary)
-sudo cp -r ./* "$INSTALL_DIR/" || { echo "Failed to copy files. Exiting."; exit 1; }
-
-echo "Setting file permissions and ownership..."
-
-# Ensure chrome-sandbox exists before changing ownership and permissions
-cd "$INSTALL_DIR"
+# --- Step 2: Set permissions ---
+echo "Setting file permissions..."
+cd "\$INSTALL_DIR"
 if [ -f "chrome-sandbox" ]; then
     chown root:root chrome-sandbox
-    sync
     chmod 4755 chrome-sandbox
     sync
 else
     echo "chrome-sandbox not found. Skipping..."
 fi
 
-# Step 2: Create the .desktop file for Desktop and system-wide
+# Ensure Electron binary is executable
+if [ -f "\$INSTALL_DIR/electron" ]; then
+    chmod +x "\$INSTALL_DIR/electron"
+fi
 
-echo "Creating .desktop file..."
-
-# Create .desktop file for the user's Desktop
-cat > "$DESKTOP_DIR/$DESKTOP_FILE_NAME" <<EOL
+# --- Step 3: Create Desktop shortcuts ---
+echo "Creating user desktop shortcut..."
+cat > "\$DESKTOP_DIR/\$DESKTOP_FILE_NAME" <<EOL
 [Desktop Entry]
 Version=1.0
-Name=$APP_NAME
-Comment=Launch $APP_NAME
-Exec=$INSTALL_DIR/electron
-Icon=$ICON_PATH
+Name=\$APP_NAME
+Comment=Launch \$APP_NAME
+Exec=\$INSTALL_DIR/electron
+Icon=\$ICON_PATH
 Terminal=false
 Type=Application
 Categories=Utility;
 EOL
 
-# Make the .desktop file executable
-chmod +x "$DESKTOP_DIR/$DESKTOP_FILE_NAME"
+chmod +x "\$DESKTOP_DIR/\$DESKTOP_FILE_NAME"
+gio set "\$DESKTOP_DIR/\$DESKTOP_FILE_NAME" "metadata::trusted" yes
 
-# Create .desktop file for system-wide use (in /usr/share/applications)
-sudo cat > "/usr/share/applications/$DESKTOP_FILE_NAME" <<EOL
+echo "Creating system-wide shortcut..."
+cat <<EOL | tee "/usr/share/applications/\$DESKTOP_FILE_NAME" > /dev/null
 [Desktop Entry]
 Version=1.0
-Name=$APP_NAME
-Comment=Launch $APP_NAME
-Exec=$INSTALL_DIR/electron
-Icon=$ICON_PATH
+Name=\$APP_NAME
+Comment=Launch \$APP_NAME
+Exec=\$INSTALL_DIR/electron
+Icon=\$ICON_PATH
 Terminal=false
 Type=Application
 Categories=Utility;
 EOL
 
-# Make the system-wide .desktop file executable
-sudo chmod +x "/usr/share/applications/$DESKTOP_FILE_NAME"
+chmod +x "/usr/share/applications/\$DESKTOP_FILE_NAME"
 
-echo "Installation complete."`;
+echo "Installation complete."
+`;
 
 const install_windows_cmd = ({ short_cut_name }) => `@echo off
 :: Désactive l'affichage des erreurs

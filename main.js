@@ -16,8 +16,8 @@ const createWindow = async () => {
   mainWindow.maximize();
 
   // If the app was already built use the build as production else use local as development
-  if (fs.existsSync(path.join(__dirname, "dist", "index.html"))) {
-    mainWindow.loadFile(path.join(__dirname, "dist", "index.html"));
+  if (fs.existsSync(path.join(__dirname, "index.html"))) {
+    mainWindow.loadFile(path.join(__dirname, "index.html"));
     mainWindow.webContents.devToolsWebContents?.addListener(
       "devtools-opened",
       () => {
